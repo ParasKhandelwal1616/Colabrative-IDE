@@ -1,20 +1,15 @@
-import { setupWSConnection } from 'y-websocket/bin/utils';
-import http from 'http';
-import { WebSocketServer } from 'ws';
+import { Server } from '@hocuspocus/server';
 
-const port = 1234;
-const server = http.createServer((req, res) => {
-  res.writeHead(200, { 'Content-Type': 'text/plain' });
-  res.end('Yjs WebSocket Server');
+// Initialize the server directly using 'new'
+const server = new Server({
+  port: 1234,
+  
+  async onConnect(data) {
+    console.log(`New user connected to document: ${data.documentName}`);
+  },
 });
 
-const wss = new WebSocketServer({ server });
-
-wss.on('connection', (conn, req) => {
-  setupWSConnection(conn, req);
-  console.log('New collaborative session started');
-});
-
-server.listen(port, () => {
-  console.log(`Yjs Sync Server running on port ${port}`);
+// Start listening
+server.listen().then(() => {
+  console.log('🚀 Hocuspocus Collaboration Server running on port 1234');
 });

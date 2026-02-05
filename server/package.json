@@ -5,6 +5,7 @@
     "main": "index.js",
     "scripts": {
         "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+        "collab": "ts-node-dev --respawn --transpile-only src/collaboration.ts",
         "build": "tsc",
         "start": "node dist/index.ts"
     },
@@ -12,14 +13,18 @@
     "author": "",
     "license": "ISC",
     "dependencies": {
+        "@hocuspocus/server": "^3.4.4",
+        "cors": "^2.8.6",
         "dotenv": "^17.2.3",
         "express": "^5.2.1",
-        "mongoose": "^9.1.5",
+        "mongodb": "^6.3.0",
+        "mongoose": "^8.22.1",
         "redis": "^5.10.0",
         "socket.io": "^4.8.3",
         "y-websocket": "^3.0.0"
     },
     "devDependencies": {
+        "@types/cors": "^2.8.19",
         "@types/express": "^5.0.6",
         "@types/node": "^25.2.0",
         "ts-node-dev": "^2.0.0",
