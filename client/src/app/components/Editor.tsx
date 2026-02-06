@@ -1,53 +1,73 @@
 "use client";
-import React, { useEffect, useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import Editor from '@monaco-editor/react';
 import * as Y from 'yjs';
-import { WebsocketProvider } from 'y-websocket';
+import { HocuspocusProvider } from '@hocuspocus/provider';
 import { MonacoBinding } from 'y-monaco';
+import { Play, Loader2 } from "lucide-react";
 
-export const CollaborativeEditor = ({ roomId }: { roomId: string }) => {
+// NEW: Accept an onRun function from the parent
+export const CollaborativeEditor = ({ 
+  roomId, 
+  onRun 
+}: { 
+  roomId: string, 
+  onRun: (code: string) => void 
+}) => {
   const editorRef = useRef<any>(null);
+  const [isReady, setIsReady] = useState(false);
 
   function handleEditorDidMount(editor: any) {
     editorRef.current = editor;
+    setIsReady(true);
 
-    // 1. Initialize Yjs Document
     const doc = new Y.Doc();
-
-    // 2. Connect to the Y-Websocket Server (Port 1234)
-    const provider = new WebsocketProvider(
-      'ws://localhost:1234', 
-      roomId, // Room ID is now dynamic based on the file!
-      doc
-    );
+    const provider = new HocuspocusProvider({
+      url: "ws://localhost:1234",
+      name: roomId,
+      document: doc,
+    });
 
     const type = doc.getText('monaco');
-
-    // 3. Bind Yjs to Monaco
     const binding = new MonacoBinding(
-      type, 
-      editorRef.current.getModel(), 
-      new Set([editorRef.current]), 
+      type,
+      editorRef.current.getModel(),
+      new Set([editorRef.current]),
       provider.awareness
     );
-
-    return () => {
-      doc.destroy();
-      provider.destroy();
-    };
   }
 
+  // Helper to extract code and trigger run
+  const handleRunClick = () => {
+    if (editorRef.current) {
+      const code = editorRef.current.getValue();
+      onRun(code);
+    }
+  };
+
   return (
-    <Editor
-      height="100vh"
-      theme="vs-dark"
-      defaultLanguage="javascript"
-      onMount={handleEditorDidMount}
-      options={{
-        minimap: { enabled: false },
-        fontSize: 14,
-        automaticLayout: true,
-      }}
-    />
+    <div className="relative h-full w-full">
+      {/* Floating Run Button */}
+      <button 
+        onClick={handleRunClick}
+        className="absolute top-4 right-6 z-10 bg-green-600 hover:bg-green-700 text-white p-2 rounded-full shadow-lg transition-all flex items-center justify-center group"
+        title="Run Code"
+      >
+        <Play size={18} className="fill-white ml-0.5" />
+      </button>
+
+      <Editor
+        height="100%"
+        theme="vs-dark"
+        defaultLanguage="javascript"
+        onMount={handleEditorDidMount}
+        options={{
+          minimap: { enabled: false },
+          fontSize: 14,
+          automaticLayout: true,
+          padding: { top: 20 }
+        }}
+      />
+    </div>
   );
 };
