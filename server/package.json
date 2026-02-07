@@ -13,6 +13,7 @@
     "author": "",
     "license": "ISC",
     "dependencies": {
+        "@hocuspocus/extension-database": "^3.4.4",
         "@hocuspocus/server": "^3.4.4",
         "cors": "^2.8.6",
         "dotenv": "^17.2.3",
@@ -21,7 +22,8 @@
         "mongoose": "^8.22.1",
         "redis": "^5.10.0",
         "socket.io": "^4.8.3",
-        "y-websocket": "^3.0.0"
+        "y-websocket": "^3.0.0",
+        "yjs": "^13.6.29"
     },
     "devDependencies": {
         "@types/cors": "^2.8.19",

@@ -1,26 +1,89 @@
 @import "tailwindcss";
-
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+    --background: #ffffff;
+    --foreground: #171717;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --font-sans: var(--font-geist-sans);
+    --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+     :root {
+        --background: #0a0a0a;
+        --foreground: #ededed;
+    }
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+
+/* REMOTE CURSOR STYLES */
+
+.yRemoteSelection {
+    background-color: rgb(250, 129, 0, 0.5);
+}
+
+.yRemoteSelectionHead {
+    position: absolute;
+    border-left: orange solid 2px;
+    border-top: orange solid 2px;
+    border-bottom: orange solid 2px;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+.yRemoteSelectionHead::after {
+    position: absolute;
+    content: " ";
+    border: 3px solid orange;
+    border-radius: 4px;
+    left: -4px;
+    top: -5px;
+}
+
+
+/* The Name Tag above the cursor */
+
+.yRemoteSelectionHead::before {
+    content: attr(data-name);
+    /* Pulls the name from the data attribute */
+    position: absolute;
+    background-color: orange;
+    /* Default fallback */
+    color: white;
+    padding: 2px 6px;
+    font-family: sans-serif;
+    font-size: 10px;
+    border-radius: 4px;
+    top: -20px;
+    /* Position above the line */
+    left: -2px;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 10;
+    opacity: 0;
+    /* Hide by default, show on hover or activity if needed */
+    transition: opacity 0.2s;
+}
+
+
+/* Show name tag when hovering */
+
+.yRemoteSelectionHead:hover::before {
+    opacity: 1;
+}
+
+
+/* OPTIONAL: Make name tag always visible for demo */
+
+.yRemoteSelectionHead::before {
+    opacity: 1 !important;
 }
