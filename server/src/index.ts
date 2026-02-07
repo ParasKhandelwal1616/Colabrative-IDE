@@ -101,6 +101,16 @@ const RUNTIMES: any = {
     extension: "java",
   },
 };
+// Delete File Route
+app.delete("/projects/:projectId/files/:fileId", async (req, res) => {
+  try {
+    const { fileId } = req.params;
+    await File.findByIdAndDelete(fileId);
+    res.json({ message: "File deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to delete file" });
+  }
+});
 
 // Execute Code Route
 app.post("/execute", async (req, res) => {
