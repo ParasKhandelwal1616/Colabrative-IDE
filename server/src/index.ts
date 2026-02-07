@@ -77,44 +77,71 @@ app.post("/init-demo", async (req, res) => {
   }
 });
 
-// Execute Code  -Route
+const RUNTIMES: any = {
+  javascript: {
+    image: "node:18-alpine",
+    command: "node /app/code.js",
+    extension: "js",
+  },
+  python: {
+    image: "python:3.10-alpine",
+    command: "python3 /app/code.py",
+    extension: "py",
+  },
+  cpp: {
+    image: "gcc:latest",
+    // C++ needs two steps: Compile (g++) -> then Run (./a.out)
+    command: "sh -c 'g++ /app/code.cpp -o /app/a.out && /app/a.out'",
+    extension: "cpp",
+  },
+  java: {
+    image: "openjdk:17-alpine",
+    // Java is tricky: We force the file to be "Main.java" so "java Main" works
+    command: "sh -c 'javac /app/Main.java && java -cp /app Main'",
+    extension: "java",
+  },
+};
+
+// Execute Code Route
 app.post("/execute", async (req, res) => {
   const { code, language } = req.body;
+  const runtime = RUNTIMES[language];
 
-  // 1. Validation
-  if (!code) {
-    return res.status(400).json({ error: "No code provided" });
+  if (!runtime) {
+    return res.status(400).json({ error: "Unsupported language" });
   }
 
-  // 2. Create a temporary file
-  // We save the code to a file so Docker can read it
+  // 1. Create a Temp Directory
   const tempDir = path.join(__dirname, "temp");
   if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
 
-  const fileName = `job-${Date.now()}.js`;
+  // 2. Save the File
+  // Note: For Java, we force the filename to "Main.java" so the class matches
+  const fileName = language === "java" ? "Main.java" : `code.${runtime.extension}`;
   const filePath = path.join(tempDir, fileName);
-
   fs.writeFileSync(filePath, code);
 
-  // 3. Define the Docker Command
-  // "docker run" = start container
-  // "--rm" = delete container after it finishes (save space)
-  // "-v" = share the file from host to container
-  // "node:18-alpine" = the image to use
-  // "node /app/..." = the command to run inside
-  const command = `docker run --rm -v "${filePath}":/app/${fileName} node:18-alpine node /app/${fileName}`;
+  // 3. Run Docker
+  // --rm: Delete container after run
+  // -v: Map our temp file to /app/filename inside the container
+  const dockerCmd = `docker run --rm -v "${filePath}":/app/${fileName} ${runtime.image} ${runtime.command}`;
 
-  // 4. Execute
-  exec(command, (error, stdout, stderr) => {
-    // Clean up: Delete the temp file
-    fs.unlinkSync(filePath);
+  console.log(`Running: ${language}`); // Log for debugging
 
-    if (error) {
-      console.error(`Execution Error: ${stderr}`);
-      return res.json({ output: stderr || error.message });
+  exec(dockerCmd, { timeout: 10000 }, (error, stdout, stderr) => {
+    // 4. Cleanup: Delete the temp file immediately
+    try {
+      fs.unlinkSync(filePath);
+    } catch (e) {
+      console.error("Failed to delete temp file", e);
     }
 
-    // Return the successful output
+    // 5. Handle Results
+    if (error) {
+      // If the container crashed (compiler error), return stderr
+      // (We trim it to make it look cleaner)
+      return res.json({ output: stderr || error.message });
+    }
     res.json({ output: stdout });
   });
 });
