@@ -8,7 +8,7 @@ interface TerminalProps {
 
 export const Terminal = ({ output, isRunning }: TerminalProps) => {
   return (
-    <div className="h-48 bg-black border-t border-zinc-800 flex flex-col font-mono text-sm">
+    <div className="h-70 bg-black border-t border-zinc-800 flex flex-col font-mono text-xl">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2 bg-zinc-900 border-b border-zinc-800">
         <div className="flex items-center gap-2 text-zinc-400">

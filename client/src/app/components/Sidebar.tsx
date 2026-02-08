@@ -31,10 +31,10 @@ export const Sidebar = ({
   };
 
   return (
-    <div className="w-64 bg-zinc-900 border-r border-zinc-800 h-full flex flex-col font-sans">
+    <div className="w-80 bg-zinc-900 border-r border-zinc-800 h-full flex flex-col font-sans">
       {/* Header */}
       <div className="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/50">
-        <span className="font-semibold text-zinc-400 text-xs tracking-widest uppercase">Explorer</span>
+        <span className="font-semibold text-zinc-400 text-xl tracking-widest uppercase">Explorer</span>
         <button 
           onClick={() => setIsCreating(true)}
           className="p-1.5 hover:bg-zinc-800 rounded-md transition-all text-zinc-400 hover:text-white"
@@ -69,7 +69,7 @@ export const Sidebar = ({
             <div
               key={file._id}
               onClick={() => onFileSelect(file._id)}
-              className={`group flex items-center justify-between px-3 py-1.5 cursor-pointer text-sm rounded-md transition-all border border-transparent ${
+              className={`group flex items-center justify-between px-3 py-1.5 cursor-pointer text-xl rounded-md transition-all border border-transparent ${
                 selectedFileId === file._id 
                   ? "bg-blue-500/10 text-blue-100 border-blue-500/20" 
                   : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
@@ -77,7 +77,7 @@ export const Sidebar = ({
             >
               <div className="flex items-center gap-2 overflow-hidden">
                 <FileIcon name={file.name} />
-                <span className="truncate font-medium">{file.name}</span>
+                <span className="truncate font-bold text-xl">{file.name}</span>
               </div>
 
               {/* DELETE BUTTON (Visible on Hover) */}

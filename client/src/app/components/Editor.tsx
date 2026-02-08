@@ -5,22 +5,24 @@ import * as Y from 'yjs';
 import { HocuspocusProvider } from '@hocuspocus/provider';
 import { MonacoBinding } from 'y-monaco';
 import { Play } from "lucide-react";
-import { useUser } from "@clerk/nextjs"; // <--- Import Clerk
+import { useUser } from "@clerk/nextjs"; 
 
 interface EditorProps {
   roomId: string;
   language: string;
   onRun: (code: string) => void;
+  // NEW: Callback to tell the parent who is online
+  onUserChange?: (users: any[]) => void; 
 }
 
-export const CollaborativeEditor = ({ roomId, language, onRun }: EditorProps) => {
-  const { user } = useUser(); // <--- Get User Info
+export const CollaborativeEditor = ({ roomId, language, onRun, onUserChange }: EditorProps) => {
+  const { user } = useUser();
   const editorRef = useRef<any>(null);
   const [provider, setProvider] = useState<HocuspocusProvider | null>(null);
   const [doc, setDoc] = useState<Y.Doc | null>(null);
   const [binding, setBinding] = useState<MonacoBinding | null>(null);
 
-  // Clean up on unmount
+  // Cleanup
   useEffect(() => {
     return () => {
       provider?.destroy();
@@ -29,17 +31,51 @@ export const CollaborativeEditor = ({ roomId, language, onRun }: EditorProps) =>
     };
   }, [provider, doc, binding]);
 
-  // NEW: Update User Identity when Clerk loads
+  // 1. SETUP USER IDENTITY
   useEffect(() => {
     if (provider && user) {
-      // Send user details to the Collaboration Server
+      const randomColor = "#" + Math.floor(Math.random()*16777215).toString(16);
+      
+      // Set my details
       provider.setAwarenessField('user', {
         name: user.fullName || "Anonymous",
-        color: "#" + Math.floor(Math.random()*16777215).toString(16), // Random Cursor Color
-        avatar: user.imageUrl, // Profile Picture
+        color: randomColor,
+        avatar: user.imageUrl,
       });
     }
   }, [provider, user]);
+
+  // 2. LISTEN FOR ACTIVE USERS (The Logic)
+  useEffect(() => {
+    if (!provider || !onUserChange) return;
+
+    const updateUsers = () => {
+      // Get all states from awareness
+      const states = provider.awareness.getStates();
+      
+      const activeUsers: any[] = [];
+      states.forEach((state: any, clientId: number) => {
+        if (state.user) {
+          activeUsers.push({
+            clientId,
+            ...state.user
+          });
+        }
+      });
+      
+      onUserChange(activeUsers);
+    };
+
+    // Listen to changes
+    provider.awareness.on('change', updateUsers);
+    
+    // Initial call
+    updateUsers();
+
+    return () => {
+      provider.awareness.off('change', updateUsers);
+    };
+  }, [provider, onUserChange]);
 
   function handleEditorDidMount(editor: any) {
     editorRef.current = editor;
@@ -53,7 +89,7 @@ export const CollaborativeEditor = ({ roomId, language, onRun }: EditorProps) =>
 
     const type = newDoc.getText('monaco');
 
-    // Init content if empty
+    // Init content
     const currentContent = editor.getValue();
     if (type.toString() === "" && currentContent) {
         type.insert(0, currentContent);
@@ -73,8 +109,7 @@ export const CollaborativeEditor = ({ roomId, language, onRun }: EditorProps) =>
 
   const handleRunClick = () => {
     if (editorRef.current) {
-      const code = editorRef.current.getValue();
-      onRun(code);
+      onRun(editorRef.current.getValue());
     }
   };
 
@@ -96,10 +131,9 @@ export const CollaborativeEditor = ({ roomId, language, onRun }: EditorProps) =>
         onMount={handleEditorDidMount}
         options={{
           minimap: { enabled: false },
-          fontSize: 14,
+          fontSize: 20,
           automaticLayout: true,
           padding: { top: 20 },
-          scrollBeyondLastLine: false,
         }}
       />
     </div>
