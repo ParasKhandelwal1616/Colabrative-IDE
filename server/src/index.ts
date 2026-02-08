@@ -167,6 +167,19 @@ io.on("connection", (socket) => {
     socket.join(projectId);
     console.log(`User ${socket.id} joined project ${projectId}`);
   });
+
+  socket.on("join-project", (projectId) => {
+    socket.join(projectId);
+    console.log(`User joined project: ${projectId}`);
+  });
+
+  // NEW: Handle Chat Messages
+  socket.on("send-message", (data) => {
+    // data = { projectId, message, sender: { name, avatar } }
+    
+    // Broadcast to everyone ELSE in the room
+    socket.to(data.projectId).emit("receive-message", data);
+  });
 });
 
 server.listen(5000, () => {

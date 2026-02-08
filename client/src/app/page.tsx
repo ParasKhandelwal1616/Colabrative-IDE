@@ -4,6 +4,7 @@ import { io } from "socket.io-client";
 import dynamic from "next/dynamic";
 import { Sidebar } from "./components/Sidebar";
 import { Terminal } from "./components/Terminal";
+import { ChatInterface } from "./components/ChatInterface";
 import {
   UserButton,
   SignInButton,
@@ -140,6 +141,23 @@ export default function Home() {
     }
   };
 
+  // Add this state
+const [socket, setSocket] = useState<any>(null);
+
+// Update this useEffect
+useEffect(() => {
+  if (!projectId) return;
+
+  const newSocket = io("http://localhost:5000");
+  newSocket.emit("join-project", projectId);
+  
+  setSocket(newSocket); // <--- Save the socket
+
+  return () => {
+    newSocket.disconnect();
+  };
+}, [projectId]);
+
   // 7. Run Code
   const runCode = async (code: string) => {
     setIsRunning(true);
@@ -238,6 +256,10 @@ export default function Home() {
           <Terminal output={output} isRunning={isRunning} />
         </div>
       </div>
+      {/* Floating Chat Window */}
+    {socket && projectId && (
+       <ChatInterface socket={socket} projectId={projectId} />
+    )}
     </main>
   );
 }
