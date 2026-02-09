@@ -1,22 +1,28 @@
 "use client";
 import { File, Plus, Trash2 } from "lucide-react"; // Import Trash2
 import { useState } from "react";
-import { FileIcon } from "./FileIcon"; 
+import { FileIcon } from "./FileIcon";
+
+interface CodeFile {
+  _id: string;
+  name: string;
+  // Add other properties if they are used elsewhere
+}
 
 interface SidebarProps {
-  files: any[];
+  files: CodeFile[];
   onFileSelect: (fileId: string) => void;
   onFileCreate: (name: string) => void;
   onFileDelete: (fileId: string) => void; // <--- NEW PROP
   selectedFileId: string | null;
 }
 
-export const Sidebar = ({ 
-  files, 
-  onFileSelect, 
-  onFileCreate, 
+export const Sidebar = ({
+  files,
+  onFileSelect,
+  onFileCreate,
   onFileDelete, // <--- Destructure it
-  selectedFileId 
+  selectedFileId,
 }: SidebarProps) => {
   const [isCreating, setIsCreating] = useState(false);
   const [newFileName, setNewFileName] = useState("");
@@ -34,8 +40,10 @@ export const Sidebar = ({
     <div className="w-80 bg-zinc-900 border-r border-zinc-800 h-full flex flex-col font-sans">
       {/* Header */}
       <div className="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/50">
-        <span className="font-semibold text-zinc-400 text-xl tracking-widest uppercase">Explorer</span>
-        <button 
+        <span className="font-semibold text-zinc-400 text-xl tracking-widest uppercase">
+          Explorer
+        </span>
+        <button
           onClick={() => setIsCreating(true)}
           className="p-1.5 hover:bg-zinc-800 rounded-md transition-all text-zinc-400 hover:text-white"
           title="New File"
@@ -43,7 +51,7 @@ export const Sidebar = ({
           <Plus size={16} />
         </button>
       </div>
-      
+
       <div className="flex-1 overflow-y-auto py-2">
         {/* Input Box (Same as before) */}
         {isCreating && (
@@ -70,8 +78,8 @@ export const Sidebar = ({
               key={file._id}
               onClick={() => onFileSelect(file._id)}
               className={`group flex items-center justify-between px-3 py-1.5 cursor-pointer text-xl rounded-md transition-all border border-transparent ${
-                selectedFileId === file._id 
-                  ? "bg-blue-500/10 text-blue-100 border-blue-500/20" 
+                selectedFileId === file._id
+                  ? "bg-blue-500/10 text-blue-100 border-blue-500/20"
                   : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
               }`}
             >

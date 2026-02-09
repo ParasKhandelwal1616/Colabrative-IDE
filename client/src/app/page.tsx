@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { io } from "socket.io-client";
+import { io, Socket } from "socket.io-client";
 import dynamic from "next/dynamic";
 import { Sidebar } from "./components/Sidebar";
 import { Terminal } from "./components/Terminal";
@@ -13,6 +13,13 @@ import {
   SignedOut,
 } from "@clerk/nextjs";
 import { ClientSideAvtarStack } from "./components/ClientSideAvatarStack";
+import { ActiveUser } from "./components/Editor"; // Import ActiveUser
+
+interface CodeFile {
+  _id: string;
+  name: string;
+  language: string; // Assuming language is also part of the file object based on usage in getLanguageFromFileName and runCode
+}
 
 // Disable SSR for the Editor so it doesn't crash Next.js
 const CollaborativeEditor = dynamic(
@@ -21,14 +28,14 @@ const CollaborativeEditor = dynamic(
 );
 
 export default function Home() {
-  const [files, setFiles] = useState<any[]>([]);
-  const [selectedFile, setSelectedFile] = useState<any>(null);
+  const [files, setFiles] = useState<CodeFile[]>([]);
+  const [selectedFile, setSelectedFile] = useState<CodeFile | null>(null);
   const [projectId, setProjectId] = useState<string>("");
 
   // Terminal State
   const [output, setOutput] = useState<string[]>([]);
   const [isRunning, setIsRunning] = useState(false);
-  const [activeUsers, setActiveUsers] = useState<any[]>([]);
+  const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([]);
 
   // 1. Initialize Demo
   useEffect(() => {
@@ -76,16 +83,6 @@ export default function Home() {
         return "plaintext";
     }
   };
-
-  // 3. Socket Connection (Keep alive)
-  useEffect(() => {
-    if (!projectId) return;
-    const socket = io("http://localhost:5000");
-    socket.emit("join-project", projectId);
-    return () => {
-      socket.disconnect();
-    };
-  }, [projectId]);
 
   // 4. Refresh List
   const refreshFiles = (id: string) => {
@@ -141,25 +138,25 @@ export default function Home() {
     }
   };
 
-  // Add this state
-const [socket, setSocket] = useState<any>(null);
+  // 3. Socket Connection and State Management
+  const [socket, setSocket] = useState<Socket | null>(null);
 
-// Update this useEffect
-useEffect(() => {
-  if (!projectId) return;
+  useEffect(() => {
+    if (!projectId) return;
 
-  const newSocket = io("http://localhost:5000");
-  newSocket.emit("join-project", projectId);
-  
-  setSocket(newSocket); // <--- Save the socket
+    const newSocket = io("http://localhost:5000");
+    newSocket.emit("join-project", projectId);
 
-  return () => {
-    newSocket.disconnect();
-  };
-}, [projectId]);
+    setSocket(newSocket); // <--- Save the socket
+
+    return () => {
+      newSocket.disconnect();
+    };
+  }, [projectId]);
 
   // 7. Run Code
   const runCode = async (code: string) => {
+    if (!selectedFile) return; // Add null check
     setIsRunning(true);
     setOutput([]);
 
@@ -226,9 +223,9 @@ useEffect(() => {
       <div className="flex-1 flex overflow-hidden">
         <Sidebar
           files={files}
-          selectedFileId={selectedFile?._id}
+          selectedFileId={selectedFile?._id ?? null}
           onFileSelect={(id) =>
-            setSelectedFile(files.find((f) => f._id === id))
+            setSelectedFile(files.find((f) => f._id === id) ?? null)
           }
           onFileCreate={handleCreateFile}
           onFileDelete={handleDeleteFile} // <--- Added this back!
@@ -257,10 +254,9 @@ useEffect(() => {
         </div>
       </div>
       {/* Floating Chat Window */}
-    {socket && projectId && (
-       <ChatInterface socket={socket} projectId={projectId} />
-    )}
+      {socket && projectId && (
+        <ChatInterface socket={socket} projectId={projectId} />
+      )}
     </main>
   );
-
 }

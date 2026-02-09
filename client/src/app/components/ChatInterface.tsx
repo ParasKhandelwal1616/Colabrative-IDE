@@ -1,7 +1,8 @@
 "use client";
+import { Socket } from "socket.io-client";
 import { useState, useEffect, useRef } from "react";
 import { Send, X, MessageSquare } from "lucide-react";
-import { useUser } from "@clerk/nextjs"; 
+import { useUser } from "@clerk/nextjs";
 
 interface Message {
   id: string;
@@ -14,8 +15,16 @@ interface Message {
   timestamp: number;
 }
 
+interface ReceiveMessageData {
+  message: string;
+  sender: {
+    name: string;
+    avatar: string;
+  };
+}
+
 interface ChatProps {
-  socket: any;
+  socket: Socket;
   projectId: string;
 }
 
@@ -36,7 +45,7 @@ export const ChatInterface = ({ socket, projectId }: ChatProps) => {
   useEffect(() => {
     if (!socket) return;
 
-    const handleReceiveMessage = (data: any) => {
+    const handleReceiveMessage = (data: ReceiveMessageData) => {
       setMessages((prev) => [
         ...prev,
         {
@@ -76,10 +85,10 @@ export const ChatInterface = ({ socket, projectId }: ChatProps) => {
       {
         id: Date.now().toString(),
         text: newMessage,
-        sender: { 
-          name: "Me", 
-          avatar: user.imageUrl, 
-          isMe: true 
+        sender: {
+          name: "Me",
+          avatar: user.imageUrl,
+          isMe: true,
         },
         timestamp: Date.now(),
       },
@@ -106,7 +115,10 @@ export const ChatInterface = ({ socket, projectId }: ChatProps) => {
       {/* Header */}
       <div className="bg-zinc-800 p-3 flex justify-between items-center border-b border-zinc-700">
         <span className="font-semibold text-sm text-zinc-100">Team Chat</span>
-        <button onClick={() => setIsOpen(false)} className="text-zinc-400 hover:text-white">
+        <button
+          onClick={() => setIsOpen(false)}
+          className="text-zinc-400 hover:text-white"
+        >
           <X size={16} />
         </button>
       </div>
@@ -145,7 +157,10 @@ export const ChatInterface = ({ socket, projectId }: ChatProps) => {
       </div>
 
       {/* Input Area */}
-      <form onSubmit={handleSendMessage} className="p-3 bg-zinc-800 border-t border-zinc-700 flex gap-2">
+      <form
+        onSubmit={handleSendMessage}
+        className="p-3 bg-zinc-800 border-t border-zinc-700 flex gap-2"
+      >
         <input
           type="text"
           value={newMessage}
