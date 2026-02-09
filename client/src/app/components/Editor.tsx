@@ -50,9 +50,11 @@ export const CollaborativeEditor = ({ roomId, language, onRun, onUserChange }: E
     if (!provider || !onUserChange) return;
 
     const updateUsers = () => {
-      // Get all states from awareness
-      const states = provider.awareness.getStates();
+      // FIX 1: Add '?' before .getStates()
+      const states = provider.awareness?.getStates();
       
+      if (!states) return; // If no states, stop.
+
       const activeUsers: any[] = [];
       states.forEach((state: any, clientId: number) => {
         if (state.user) {
@@ -67,13 +69,13 @@ export const CollaborativeEditor = ({ roomId, language, onRun, onUserChange }: E
     };
 
     // Listen to changes
-    provider.awareness.on('change', updateUsers);
+    provider.awareness?.on('change', updateUsers);
     
     // Initial call
     updateUsers();
 
     return () => {
-      provider.awareness.off('change', updateUsers);
+      provider.awareness?.off('change', updateUsers);
     };
   }, [provider, onUserChange]);
 

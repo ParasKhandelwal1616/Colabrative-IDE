@@ -1,13 +1,11 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
-
-# 1. Go into the client folder (CRITICAL STEP)
+#!/bin/sh
+# Navigate to the client folder where package.json lives
 cd client
 
-# 2. Run the checks
+# Run the checks
 echo "🔍 Running Pre-Commit Checks..."
 npx lint-staged
 
-# 3. Check Types
+# Check Types
 echo "TypeScript Check..."
 npx tsc --noEmit
