@@ -207,7 +207,7 @@ useEffect(() => {
               </button>
             </SignInButton>
           </SignedOut>
-
+          {/*adding a signup*/}
           <SignedIn>
             <UserButton
               afterSignOutUrl="/"
@@ -262,4 +262,5 @@ useEffect(() => {
     )}
     </main>
   );
+
 }
