@@ -188,7 +188,7 @@ export default function Home() {
           <div className="w-8 h-8 rounded-lg bg-blue-600/20 flex items-center justify-center border border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.2)]">
             <Code2 size={18} className="text-blue-500" />
           </div>
-          <span className="  p-1 font-bold text-4xl tracking-tight">
+          <span className="  p-1 font-bold text-2xl tracking-tight">
             NexusIDE
           </span>
         </div>
@@ -241,6 +241,7 @@ export default function Home() {
               <CollaborativeEditor
                 key={selectedFile._id}
                 roomId={selectedFile._id}
+                filename={selectedFile.name}
                 language={getLanguageFromFileName(selectedFile.name)}
                 onRun={runCode}
                 onUserChange={(users) => setActiveUsers(users)} // <--- CONNECT HERE

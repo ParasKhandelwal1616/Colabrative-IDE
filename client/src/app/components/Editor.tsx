@@ -1,22 +1,17 @@
 "use client";
 import React, { useRef, useState, useEffect } from "react";
-import Editor from "@monaco-editor/react";
+import Editor, { OnMount } from "@monaco-editor/react";
 import * as Y from "yjs";
 import { HocuspocusProvider } from "@hocuspocus/provider";
 import { MonacoBinding } from "y-monaco";
-import { Play } from "lucide-react";
+import { Play, Loader2 } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
-import * as monaco from "monaco-editor";
 
+// --- Types ---
 export interface AwarenessUser {
   name: string;
   color: string;
   avatar: string;
-}
-
-interface AwarenessState {
-  user?: AwarenessUser;
-  [key: string]: unknown; // Allow other properties on the awareness state
 }
 
 export interface ActiveUser extends AwarenessUser {
@@ -26,24 +21,27 @@ export interface ActiveUser extends AwarenessUser {
 interface EditorProps {
   roomId: string;
   language: string;
+  filename: string; // <--- CRITICAL for Syntax Highlighting
   onRun: (code: string) => void;
-  // NEW: Callback to tell the parent who is online
   onUserChange?: (users: ActiveUser[]) => void;
+  readOnly?: boolean;
 }
 
 export const CollaborativeEditor = ({
   roomId,
   language,
+  filename,
   onRun,
   onUserChange,
+  readOnly = false,
 }: EditorProps) => {
   const { user } = useUser();
-  const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const editorRef = useRef<any>(null);
   const [provider, setProvider] = useState<HocuspocusProvider | null>(null);
   const [doc, setDoc] = useState<Y.Doc | null>(null);
   const [binding, setBinding] = useState<MonacoBinding | null>(null);
 
-  // Cleanup
+  // Cleanup on Unmount
   useEffect(() => {
     return () => {
       provider?.destroy();
@@ -52,13 +50,10 @@ export const CollaborativeEditor = ({
     };
   }, [provider, doc, binding]);
 
-  // 1. SETUP USER IDENTITY
+  // 1. Setup User Identity
   useEffect(() => {
     if (provider && user) {
-      const randomColor =
-        "#" + Math.floor(Math.random() * 16777215).toString(16);
-
-      // Set my details
+      const randomColor = "#" + Math.floor(Math.random() * 16777215).toString(16);
       provider.setAwarenessField("user", {
         name: user.fullName || "Anonymous",
         color: randomColor,
@@ -67,18 +62,16 @@ export const CollaborativeEditor = ({
     }
   }, [provider, user]);
 
-  // 2. LISTEN FOR ACTIVE USERS (The Logic)
+  // 2. Listen for Active Users
   useEffect(() => {
     if (!provider || !onUserChange) return;
 
     const updateUsers = () => {
-      // FIX 1: Add '?' before .getStates()
       const states = provider.awareness?.getStates();
-
-      if (!states) return; // If no states, stop.
+      if (!states) return;
 
       const activeUsers: ActiveUser[] = [];
-      states.forEach((state: AwarenessState, clientId: number) => {
+      states.forEach((state: any, clientId: number) => {
         if (state.user) {
           activeUsers.push({
             clientId,
@@ -86,14 +79,10 @@ export const CollaborativeEditor = ({
           });
         }
       });
-
       onUserChange(activeUsers);
     };
 
-    // Listen to changes
     provider.awareness?.on("change", updateUsers);
-
-    // Initial call
     updateUsers();
 
     return () => {
@@ -101,7 +90,7 @@ export const CollaborativeEditor = ({
     };
   }, [provider, onUserChange]);
 
-  function handleEditorDidMount(editor: monaco.editor.IStandaloneCodeEditor) {
+  const handleEditorDidMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
 
     const newDoc = new Y.Doc();
@@ -112,24 +101,24 @@ export const CollaborativeEditor = ({
     });
 
     const type = newDoc.getText("monaco");
-
-    // Init content
     const currentContent = editor.getValue();
+
+    // Preserve content if it's the first load
     if (type.toString() === "" && currentContent) {
       type.insert(0, currentContent);
     }
 
     const newBinding = new MonacoBinding(
       type,
-      editorRef.current.getModel()!,
-      new Set([editorRef.current]),
-      newProvider.awareness,
+      editor.getModel()!,
+      new Set([editor]),
+      newProvider.awareness
     );
 
     setDoc(newDoc);
     setProvider(newProvider);
     setBinding(newBinding);
-  }
+  };
 
   const handleRunClick = () => {
     if (editorRef.current) {
@@ -138,26 +127,33 @@ export const CollaborativeEditor = ({
   };
 
   return (
-    <div className="relative h-full w-full">
-      <button
-        onClick={handleRunClick}
-        className="absolute top-4 right-6 z-10 bg-green-600 hover:bg-green-700 text-white p-2 rounded-full shadow-lg transition-all flex items-center justify-center group"
-        title="Run Code"
-      >
-        <Play size={18} className="fill-white ml-0.5" />
-      </button>
+    <div className="relative h-full w-full bg-[#1e1e1e]">
+      {!readOnly && (
+        <button
+          onClick={handleRunClick}
+          className="absolute top-4 right-6 z-10 bg-green-600 hover:bg-green-700 text-white p-2 rounded-full shadow-lg transition-all flex items-center justify-center group"
+          title="Run Code"
+        >
+          <Play size={18} className="fill-white ml-0.5" />
+        </button>
+      )}
 
       <Editor
         height="100%"
         theme="vs-dark"
-        language={language}
-        defaultLanguage="javascript"
+        path={filename} // <--- THIS IS THE FIX. It tells Monaco "I am a Python file"
+        defaultLanguage={language} // Use defaultLanguage instead of language to prevent flicker
         onMount={handleEditorDidMount}
         options={{
+          readOnly: readOnly,
+          domReadOnly: readOnly,
           minimap: { enabled: false },
-          fontSize: 20,
+          fontSize: 22,
           automaticLayout: true,
           padding: { top: 20 },
+          scrollBeyondLastLine: false,
+          fontFamily: "'Fira Code', 'JetBrains Mono', monospace",
+          fontLigatures: true,
         }}
       />
     </div>
