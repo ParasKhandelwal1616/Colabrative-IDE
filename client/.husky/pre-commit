@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# 1. Run Lint-Staged (Fixes lint errors on changed files)
+npx lint-staged
+
+# 2. Check for Type Errors (TypeScript)
+# This runs on the WHOLE project to ensure no breaking changes
+echo "Checking for Type Errors..."
+npx tsc --noEmit

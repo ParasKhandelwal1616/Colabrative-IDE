@@ -1,33 +1,42 @@
 {
-  "name": "client",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
-  },
-  "dependencies": {
-    "@clerk/nextjs": "^6.37.3",
-    "@hocuspocus/provider": "^3.4.4",
-    "@monaco-editor/react": "^4.7.0",
-    "lucide-react": "^0.563.0",
-    "next": "16.1.6",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
-    "socket.io-client": "^4.8.3",
-    "y-monaco": "^0.1.6",
-    "yjs": "^13.6.29"
-  },
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "16.1.6",
-    "tailwindcss": "^4",
-    "typescript": "^5"
-  }
+    "name": "client",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "dev": "next dev",
+        "build": "next build",
+        "start": "next start",
+        "lint": "eslint",
+        "prepare": "husky"
+    },
+    "dependencies": {
+        "@clerk/nextjs": "^6.37.3",
+        "@hocuspocus/provider": "^3.4.4",
+        "@monaco-editor/react": "^4.7.0",
+        "lucide-react": "^0.563.0",
+        "next": "16.1.6",
+        "react": "19.2.3",
+        "react-dom": "19.2.3",
+        "socket.io-client": "^4.8.3",
+        "y-monaco": "^0.1.6",
+        "yjs": "^13.6.29"
+    },
+    "devDependencies": {
+        "@tailwindcss/postcss": "^4",
+        "@types/node": "^20",
+        "@types/react": "^19",
+        "@types/react-dom": "^19",
+        "eslint": "^9",
+        "eslint-config-next": "16.1.6",
+        "husky": "^9.1.7",
+        "lint-staged": "^16.2.7",
+        "tailwindcss": "^4",
+        "typescript": "^5"
+    },
+    "lint-staged": {
+        "*.{js,jsx,ts,tsx}": [
+            "eslint --fix",
+            "prettier --write"
+        ]
+    }
 }
