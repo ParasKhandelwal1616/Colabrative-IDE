@@ -15,6 +15,7 @@ interface SidebarProps {
   onFileCreate: (name: string) => void;
   onFileDelete: (fileId: string) => void; // <--- NEW PROP
   selectedFileId: string | null;
+  readOnly: boolean;
 }
 
 export const Sidebar = ({
@@ -22,6 +23,7 @@ export const Sidebar = ({
   onFileSelect,
   onFileCreate,
   onFileDelete, // <--- Destructure it
+  readOnly,
   selectedFileId,
 }: SidebarProps) => {
   const [isCreating, setIsCreating] = useState(false);
@@ -43,13 +45,15 @@ export const Sidebar = ({
         <span className="font-semibold text-zinc-400 text-xl tracking-widest uppercase">
           Explorer
         </span>
-        <button
-          onClick={() => setIsCreating(true)}
-          className="p-1.5 hover:bg-zinc-800 rounded-md transition-all text-zinc-400 hover:text-white"
-          title="New File"
-        >
-          <Plus size={16} />
-        </button>
+        {!readOnly && (
+          <button
+            onClick={() => setIsCreating(true)}
+            className="p-1.5 hover:bg-zinc-800 rounded-md transition-all text-zinc-400 hover:text-white"
+            title="New File"
+          >
+            <Plus size={16} />
+          </button>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto py-2">
@@ -89,16 +93,18 @@ export const Sidebar = ({
               </div>
 
               {/* DELETE BUTTON (Visible on Hover) */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation(); // Stop clicking the file row
-                  onFileDelete(file._id);
-                }}
-                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500/20 hover:text-red-400 rounded transition-all"
-                title="Delete"
-              >
-                <Trash2 size={14} />
-              </button>
+              {!readOnly && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation(); // Stop clicking the file row
+                    onFileDelete(file._id);
+                  }}
+                  className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500/20 hover:text-red-400 rounded transition-all"
+                  title="Delete"
+                >
+                  <Trash2 size={14} />
+                </button>
+              )}
             </div>
           ))}
         </div>

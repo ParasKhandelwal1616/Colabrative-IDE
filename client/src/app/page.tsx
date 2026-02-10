@@ -1,6 +1,12 @@
 "use client";
 
-import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+import {
+  SignInButton,
+  SignedIn,
+  SignedOut,
+  useUser,
+  UserButton,
+} from "@clerk/nextjs";
 import {
   ArrowRight,
   Code2,

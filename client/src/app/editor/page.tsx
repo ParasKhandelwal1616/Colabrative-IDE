@@ -13,13 +13,13 @@ import {
   SignedOut,
 } from "@clerk/nextjs";
 import { ClientSideAvtarStack } from "../components/ClientSideAvatarStack";
-import { ActiveUser } from "../components/Editor"; // Import ActiveUser
-import { Code2 } from "lucide-react";
+import { ActiveUser } from "../components/Editor";
+import { Code2, Share2, Check, Copy } from "lucide-react";
 
 interface CodeFile {
   _id: string;
   name: string;
-  language: string; // Assuming language is also part of the file object based on usage in getLanguageFromFileName and runCode
+  language: string;
 }
 
 // Disable SSR for the Editor so it doesn't crash Next.js
@@ -28,7 +28,11 @@ const CollaborativeEditor = dynamic(
   { ssr: false },
 );
 
-export default function Home() {
+export default function EditorPage() {
+  const { user, isLoaded } = useUser();
+  const [projectOwnerId, setProjectOwnerId] = useState<string | null>(null);
+  const [isCopied, setIsCopied] = useState(false);
+
   const [files, setFiles] = useState<CodeFile[]>([]);
   const [selectedFile, setSelectedFile] = useState<CodeFile | null>(null);
   const [projectId, setProjectId] = useState<string>("");
@@ -37,13 +41,30 @@ export default function Home() {
   const [output, setOutput] = useState<string[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([]);
+  const [socket, setSocket] = useState<Socket | null>(null);
 
-  // 1. Initialize Demo
+  // 1. Initialize Project from URL
   useEffect(() => {
-    fetch("http://localhost:5000/init-demo", { method: "POST" })
-      .then((res) => res.json())
+    if (!isLoaded) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const urlProjectId = params.get("projectId");
+
+    // Redirect if no ID
+    if (!urlProjectId) {
+      window.location.href = "/dashboard";
+      return;
+    }
+
+    // Load Project
+    fetch(`http://localhost:5000/projects/${urlProjectId}`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Project not found");
+        return res.json();
+      })
       .then((project) => {
         setProjectId(project._id);
+        setProjectOwnerId(project.ownerId); // Save Owner ID
         return fetch(`http://localhost:5000/projects/${project._id}/files`);
       })
       .then((res) => res.json())
@@ -51,8 +72,12 @@ export default function Home() {
         setFiles(data);
         if (data.length > 0) setSelectedFile(data[0]);
       })
-      .catch((err) => console.error("Error init:", err));
-  }, []);
+      .catch((err) => {
+        console.error("Error loading project:", err);
+        alert("Project not found");
+        window.location.href = "/dashboard";
+      });
+  }, [isLoaded]);
 
   // 2. Helper for Language
   const getLanguageFromFileName = (fileName: string) => {
@@ -85,28 +110,22 @@ export default function Home() {
     }
   };
 
-  // 4. Refresh List
   const refreshFiles = (id: string) => {
     fetch(`http://localhost:5000/projects/${id}/files`)
       .then((res) => res.json())
       .then((data) => setFiles(data));
   };
 
-  // 5. Create File
   const handleCreateFile = async (name: string) => {
     if (!projectId) return;
     try {
       const extension = name.split(".").pop();
       const language =
-        extension === "js"
-          ? "javascript"
-          : extension === "py"
-            ? "python"
-            : extension === "java"
-              ? "java"
-              : extension === "cpp"
-                ? "cpp"
-                : "plaintext";
+        extension === "py"
+          ? "python"
+          : extension === "cpp"
+            ? "cpp"
+            : "javascript";
 
       const res = await fetch(
         `http://localhost:5000/projects/${projectId}/files`,
@@ -122,15 +141,12 @@ export default function Home() {
     }
   };
 
-  // 6. Delete File
   const handleDeleteFile = async (fileId: string) => {
     if (!confirm("Are you sure you want to delete this file?")) return;
     try {
       await fetch(
         `http://localhost:5000/projects/${projectId}/files/${fileId}`,
-        {
-          method: "DELETE",
-        },
+        { method: "DELETE" },
       );
       if (selectedFile?._id === fileId) setSelectedFile(null);
       refreshFiles(projectId);
@@ -139,25 +155,20 @@ export default function Home() {
     }
   };
 
-  // 3. Socket Connection and State Management
-  const [socket, setSocket] = useState<Socket | null>(null);
-
+  // 3. Socket Connection
   useEffect(() => {
     if (!projectId) return;
-
     const newSocket = io("http://localhost:5000");
     newSocket.emit("join-project", projectId);
-
-    setSocket(newSocket); // <--- Save the socket
-
+    setSocket(newSocket);
     return () => {
       newSocket.disconnect();
     };
   }, [projectId]);
 
-  // 7. Run Code
+  // 4. Run Code
   const runCode = async (code: string) => {
-    if (!selectedFile) return; // Add null check
+    if (!selectedFile) return;
     setIsRunning(true);
     setOutput([]);
 
@@ -172,7 +183,7 @@ export default function Home() {
       });
 
       const data = await response.json();
-      setOutput(data.output.split("\n"));
+      setOutput(data.output ? data.output.split("\n") : ["Error: No output"]);
     } catch (error) {
       setOutput(["Error: Failed to execute code"]);
     } finally {
@@ -180,26 +191,59 @@ export default function Home() {
     }
   };
 
+  // 5. Share Function
+  const handleCopyInvite = () => {
+    const inviteLink = window.location.href;
+    navigator.clipboard.writeText(inviteLink);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
+  };
+
+  // 6. PERMISSIONS
+  // Owner = Logged In AND Matching ID
+  // Viewer = Not Logged In OR ID Mismatch
+  const isOwner = user && projectOwnerId && user.id === projectOwnerId;
+  const isReadOnly = false;
+
   return (
     <main className="h-screen w-screen flex flex-col bg-zinc-950 text-white overflow-hidden">
       {/* HEADER */}
-      <div className="h-20 shrink-0 border-b border-zinc-800 bg-zinc-900 flex items-center justify-between px-4 z-20 relative">
+      <div className="h-14 shrink-0 border-b border-zinc-800 bg-zinc-900 flex items-center justify-between px-4 z-20 relative">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-blue-600/20 flex items-center justify-center border border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.2)]">
             <Code2 size={18} className="text-blue-500" />
           </div>
-          <span className="  p-1 font-bold text-2xl tracking-tight">
-            NexusIDE
-          </span>
+          <span className="p-1 font-bold text-lg tracking-tight">NexusIDE</span>
+
+          {/* Read Only Badge */}
+          {isReadOnly && (
+            <span className="ml-2 px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-500 text-xs font-medium border border-yellow-500/20">
+              View Only
+            </span>
+          )}
         </div>
 
-        {/* Auth Buttons */}
         <div className="flex items-center gap-4">
-          {selectedFile && (
-            <div className="mr-4 border-r border-zinc-700 pr-4">
-              <ClientSideAvtarStack users={activeUsers} />
-            </div>
+          {/* SHARE BUTTON */}
+          {projectId && (
+            <button
+              onClick={handleCopyInvite}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                isCopied
+                  ? "bg-green-500/10 text-green-400 border border-green-500/20"
+                  : "bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 border border-zinc-700"
+              }`}
+            >
+              {isCopied ? <Check size={14} /> : <Share2 size={14} />}
+              {isCopied ? "Copied!" : "Share"}
+            </button>
           )}
+
+          {/* Active Users Stack */}
+          <div className="mr-4 border-r border-zinc-700 pr-4">
+            <ClientSideAvtarStack users={activeUsers} />
+          </div>
+
           <SignedOut>
             <SignInButton mode="modal">
               <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors">
@@ -207,14 +251,13 @@ export default function Home() {
               </button>
             </SignInButton>
           </SignedOut>
-          {/*adding a signup*/}
           <SignedIn>
             <UserButton
               afterSignOutUrl="/"
               appearance={{
                 elements: {
                   avatarBox:
-                    " w-12 h-12 ring-2 ring-zinc-700 hover:ring-blue-500 transition-all",
+                    "w-8 h-8 ring-2 ring-zinc-700 hover:ring-blue-500 transition-all",
                 },
               }}
             />
@@ -231,11 +274,11 @@ export default function Home() {
             setSelectedFile(files.find((f) => f._id === id) ?? null)
           }
           onFileCreate={handleCreateFile}
-          onFileDelete={handleDeleteFile} // <--- Added this back!
+          onFileDelete={handleDeleteFile}
+          readOnly={isReadOnly} // <--- PERMISSION CONTROL
         />
 
         <div className="flex-1 flex flex-col relative min-w-0">
-          {/* EDITOR AREA - Added min-h-0 to fix overflow */}
           <div className="flex-1 relative min-h-0 overflow-hidden">
             {selectedFile ? (
               <CollaborativeEditor
@@ -244,7 +287,8 @@ export default function Home() {
                 filename={selectedFile.name}
                 language={getLanguageFromFileName(selectedFile.name)}
                 onRun={runCode}
-                onUserChange={(users) => setActiveUsers(users)} // <--- CONNECT HERE
+                onUserChange={(users) => setActiveUsers(users)}
+                readOnly={isReadOnly} // <--- PERMISSION CONTROL
               />
             ) : (
               <div className="flex items-center justify-center h-full text-zinc-500 select-none">
@@ -252,12 +296,10 @@ export default function Home() {
               </div>
             )}
           </div>
-
-          {/* TERMINAL AREA - Fixed height */}
           <Terminal output={output} isRunning={isRunning} />
         </div>
       </div>
-      {/* Floating Chat Window */}
+
       {socket && projectId && (
         <ChatInterface socket={socket} projectId={projectId} />
       )}
