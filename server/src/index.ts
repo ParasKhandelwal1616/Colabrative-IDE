@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
-import { Project } from "./models/Project";
-import { File } from "./models/File";
+import { Project } from "./models/Project.js";
+import { File } from "./models/File.js";
 import { Server } from "socket.io";
 import http from "http";
 import mongoose from "mongoose";
@@ -9,7 +9,7 @@ import { exec } from "child_process";
 import fs from "fs";
 import path from "path";
 import { createAdapter } from "@socket.io/redis-adapter";
-import Redis from "ioredis";
+import  { Redis } from "ioredis";
 import "dotenv/config";
 
 const app = express();
@@ -26,8 +26,8 @@ mongoose
 const pubClient = new Redis(process.env.REDIS_URL || "redis://localhost:6379");
 const subClient = pubClient.duplicate();
 
-pubClient.on("error", (err) => console.error("Redis Pub Error:", err));
-subClient.on("error", (err) => console.error("Redis Sub Error:", err));
+pubClient.on("error", (err : string) => console.error("Redis Pub Error:", err));
+subClient.on("error", (err : string) => console.error("Redis Sub Error:", err));
 
 // --- RUNTIME CONFIG ---
 const RUNTIMES: any = {

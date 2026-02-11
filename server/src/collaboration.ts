@@ -1,7 +1,7 @@
 import { Server } from "@hocuspocus/server";
 import { Database } from "@hocuspocus/extension-database";
 import mongoose from "mongoose";
-import { File } from "./models/File";
+import { File } from "./models/File.js";
 import * as Y from "yjs"; // <--- Import Yjs to create the initial state
 
 // 1. Connect to MongoDB
