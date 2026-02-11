@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
-import { Project } from "./models/Project.js";
-import { File } from "./models/File.js";
+import { Project } from "./models/Project";
+import { File } from "./models/File";
 import { Server } from "socket.io";
 import http from "http";
 import mongoose from "mongoose";
