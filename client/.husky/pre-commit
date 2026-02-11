@@ -1,0 +1,11 @@
+#!/bin/sh
+# Navigate to the client folder where package.json lives
+cd client
+
+# Run the checks
+echo "🔍 Running Pre-Commit Checks..."
+npx lint-staged
+
+# Check Types
+echo "TypeScript Check..."
+npx tsc --noEmit
