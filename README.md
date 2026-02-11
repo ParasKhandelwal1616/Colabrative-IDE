@@ -1,36 +1,180 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+🚀 NexusIDE - Real-Time Collaborative Cloud Editor
 
-## Getting Started
+NexusIDE is a powerful, browser-based Integrated Development Environment (IDE) that allows developers to write, compile, and execute code in the cloud. It features Google Docs-style real-time collaboration, enabling multiple users to edit code and chat simultaneously in the same room.
+✨ Key Features
 
-First, run the development server:
+    ⚡ Real-Time Collaboration: Multiple users can type, edit, and collaborate on the same file instantly using Socket.io and Redis.
 
-```bash
+    🛡️ Secure Code Execution: Code is executed inside isolated Docker containers (Alpine Linux), ensuring security and preventing malicious attacks on the host server.
+
+    📂 Cloud File System: Create, save, rename, and delete files and projects. All data is persisted in MongoDB.
+
+    🗣️ Built-in Chat: Integrated chat room for developers to discuss logic without leaving the editor.
+
+    💻 Multi-Language Support:
+
+        JavaScript (Node.js)
+
+        Python 3
+
+        C++ (GCC)
+
+        Java (OpenJDK)
+
+    🔐 Authentication: Secure login and user management powered by Clerk.
+
+    🎨 Smart Dashboard: Manage your projects, rename them inline, or join a friend's session via a shared ID/Link.
+
+🛠️ Tech Stack
+Frontend
+
+    Framework: Next.js 14 (App Router)
+
+    Language: TypeScript
+
+    Styling: Tailwind CSS + Lucide React (Icons)
+
+    Editor: Monaco Editor (The engine behind VS Code)
+
+    Auth: Clerk
+
+    State/Socket: Socket.io-client
+
+Backend
+
+    Runtime: Node.js + Express
+
+    Real-Time Engine: Socket.io
+
+    Database: MongoDB (via Mongoose)
+
+    Scaling Adapter: Redis (Pub/Sub for socket scaling)
+
+DevOps & Infrastructure
+
+    Containerization: Docker (for sandboxed code execution)
+
+    OS: Alpine Linux images (lightweight and fast)
+
+⚙️ Prerequisites
+
+Before running this project, ensure you have the following installed:
+
+    Node.js (v18 or higher)
+
+    Docker Desktop (Must be running for code execution to work)
+
+    Redis (Used for Socket.io adapter)
+
+    MongoDB (Local or Atlas URL)
+
+🚀 Installation & Setup
+1. Clone the Repository
+Bash
+
+git clone https://github.com/ParasKhandelwal1616/Colabrative-IDE
+cd Colabrative-IDE
+
+2. Setup the Backend (Server)
+
+Navigate to the server folder and install dependencies:
+Bash
+
+cd server
+npm install
+
+Create a .env file in the server directory:
+Code snippet
+
+PORT=5000
+MONGO_URI=mongodb://localhost:27017/nexus-ide
+REDIS_URL=redis://localhost:6379
+
+3. Setup the Frontend (Client)
+
+Open a new terminal, navigate to the client folder, and install dependencies:
+Bash
+
+cd client
+npm install
+
+Create a .env.local file in the client directory (Get these keys from your Clerk Dashboard):
+Code snippet
+
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+CLERK_SECRET_KEY=sk_test_...
+
+🏃‍♂️ Running the Application
+Step 1: Start Supporting Services
+
+Make sure your database and Redis are running:
+
+    MongoDB: mongod
+
+    Redis: redis-server
+
+    Docker: Ensure Docker Desktop is open and running.
+
+Step 2: Start the Backend
+Bash
+
+cd server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+# Server should run on http://localhost:5000
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Step 3: Start the Frontend
+Bash
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+cd client
+npm run dev
+# Client should run on http://localhost:3000
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+📖 Usage Guide
 
-## Learn More
+    Login: Open http://localhost:3000 and sign in using Google or Email (via Clerk).
 
-To learn more about Next.js, take a look at the following resources:
+    Create Project: Click "New Project" on the dashboard. Give it a name (e.g., "Python Algo").
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+    Write Code: Select a file (e.g., main.py) and start typing.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+    Run Code: Click the "Run" button. The server will spin up a Docker container, execute your script, and stream the output to the terminal.
 
-## Deploy on Vercel
+    Collaborate:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+        Click the "Share" button in the top right.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+        Send the link to a friend.
+
+        Once they join, you will see their cursor and edits in real-time!
+
+🧠 System Architecture Diagram
+Code snippet
+
+graph TD;
+    User-->|Writes Code| Frontend[Next.js Client];
+    Frontend-->|Socket Event| Backend[Express Server];
+    Backend-->|Save File| DB[(MongoDB)];
+    Backend-->|Sync Changes| Redis[Redis Adapter];
+    Backend-->|Execute Request| Docker[Docker Container];
+    Docker-->|Return Output| Backend;
+    Backend-->|Stream Output| Frontend;
+
+🤝 Contributing
+
+Contributions are welcome! Please fork the repository and submit a pull request for any features or bug fixes.
+
+    Fork the Project
+
+    Create your Feature Branch (git checkout -b feature/AmazingFeature)
+
+    Commit your Changes (git commit -m 'Add some AmazingFeature')
+
+    Push to the Branch (git push origin feature/AmazingFeature)
+
+    Open a Pull Request
+
+📜 License
+
+Distributed under the MIT License. See LICENSE for more information.
+
+Built with ❤️ by Paras
