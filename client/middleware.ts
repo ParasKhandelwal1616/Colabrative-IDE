@@ -1,13 +1,7 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { clerkMiddleware } from "@clerk/nextjs/server";
 
-// Define which routes are protected
-const isProtectedRoute = createRouteMatcher(["/editor(.*)"]);
-
-export default clerkMiddleware(async (auth, req) => {
-  if (isProtectedRoute(req)) {
-    await auth.protect();
-  }
-});
+// Simple middleware that just initializes Clerk
+export default clerkMiddleware();
 
 export const config = {
   matcher: [
