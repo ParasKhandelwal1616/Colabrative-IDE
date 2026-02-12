@@ -14,7 +14,7 @@ import {
 } from "@clerk/nextjs";
 import { ClientSideAvtarStack } from "../components/ClientSideAvatarStack";
 import { ActiveUser } from "../components/Editor";
-import { Code2, Share2, Check, Copy } from "lucide-react";
+import { Code2, Share2, Check, Copy, Zap, Cpu } from "lucide-react";
 
 interface CodeFile {
   _id: string;
@@ -198,54 +198,129 @@ export default function EditorPage() {
   };
 
   // 6. PERMISSIONS
-  // Owner = Logged In AND Matching ID
-  // Viewer = Not Logged In OR ID Mismatch
   const isOwner = user && projectOwnerId && user.id === projectOwnerId;
   const isReadOnly = false;
 
   return (
-    <main className="h-screen w-screen flex flex-col bg-zinc-950 text-white overflow-hidden">
+    <main className="h-screen w-screen flex flex-col bg-[#0a0a0f] text-white overflow-hidden relative">
+      {/* Subtle animated background */}
+      <div className="fixed inset-0 pointer-events-none opacity-30">
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-[120px] animate-pulse-slow" />
+        <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-cyan-600/10 rounded-full blur-[120px] animate-pulse-slow animation-delay-1000" />
+      </div>
+
+      {/* Subtle grid pattern */}
+      <div
+        className="fixed inset-0 pointer-events-none opacity-[0.02]"
+        style={{
+          backgroundImage: `
+          linear-gradient(rgba(59, 130, 246, 0.3) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(59, 130, 246, 0.3) 1px, transparent 1px)
+        `,
+          backgroundSize: "40px 40px",
+        }}
+      />
+
       {/* HEADER */}
-      <div className="h-14 shrink-0 border-b border-zinc-800 bg-zinc-900 flex items-center justify-between px-4 z-20 relative">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-blue-600/20 flex items-center justify-center border border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.2)]">
-            <Code2 size={18} className="text-blue-500" />
+      <div className="h-14 shrink-0 border-b border-white/[0.08] bg-[#0d0d12]/95 backdrop-blur-xl flex items-center justify-between px-4 z-20 relative shadow-[0_1px_0_0_rgba(255,255,255,0.03)] group">
+        {/* Animated top border glow */}
+        <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-blue-500/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+
+        <div className="flex items-center gap-3">
+          {/* Logo with enhanced glow */}
+          <div className="relative group/logo">
+            <div className="absolute inset-0 bg-blue-500/30 rounded-lg blur-md opacity-0 group-hover/logo:opacity-100 transition-opacity duration-300" />
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center border border-blue-500/30 shadow-[0_0_20px_rgba(59,130,246,0.2)] relative z-10 group-hover/logo:shadow-[0_0_30px_rgba(59,130,246,0.4)] transition-shadow">
+              <Code2 size={16} className="text-blue-400" />
+            </div>
           </div>
-          <span className="p-1 font-bold text-lg tracking-tight">NexusIDE</span>
+
+          <div className="flex items-center gap-2">
+            <span className="font-mono font-bold text-base tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-cyan-300 to-blue-400 bg-[length:200%_auto] animate-gradient">
+              NexusIDE
+            </span>
+
+            {/* Status indicator */}
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
+              <span className="text-[10px] font-medium text-emerald-400 uppercase tracking-wider">
+                Live
+              </span>
+            </div>
+          </div>
 
           {/* Read Only Badge */}
           {isReadOnly && (
-            <span className="ml-2 px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-500 text-xs font-medium border border-yellow-500/20">
-              View Only
+            <span className="ml-2 px-2.5 py-1 rounded-md bg-amber-500/10 text-amber-400 text-xs font-medium border border-amber-500/20 shadow-[0_0_15px_rgba(251,191,36,0.15)]">
+              <span className="inline-flex items-center gap-1.5">
+                <svg
+                  className="w-3 h-3"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                  />
+                </svg>
+                View Only
+              </span>
             </span>
           )}
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           {/* SHARE BUTTON */}
           {projectId && (
             <button
               onClick={handleCopyInvite}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+              className={`group/share relative flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all overflow-hidden ${
                 isCopied
-                  ? "bg-green-500/10 text-green-400 border border-green-500/20"
-                  : "bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 border border-zinc-700"
+                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 shadow-[0_0_20px_rgba(52,211,153,0.3)]"
+                  : "bg-zinc-800/50 text-zinc-400 hover:text-white hover:bg-zinc-800 border border-zinc-700/50 hover:border-blue-500/30 hover:shadow-[0_0_20px_rgba(59,130,246,0.2)]"
               }`}
             >
-              {isCopied ? <Check size={14} /> : <Share2 size={14} />}
-              {isCopied ? "Copied!" : "Share"}
+              {/* Shimmer effect */}
+              {!isCopied && (
+                <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover/share:translate-x-full transition-transform duration-1000" />
+              )}
+
+              {isCopied ? (
+                <>
+                  <Check
+                    size={14}
+                    className="drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]"
+                  />
+                  <span>Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Share2 size={14} />
+                  <span>Share</span>
+                </>
+              )}
             </button>
           )}
 
           {/* Active Users Stack */}
-          <div className="mr-4 border-r border-zinc-700 pr-4">
+          <div className="flex items-center gap-3 border-x border-white/[0.08] px-4">
             <ClientSideAvtarStack users={activeUsers} />
           </div>
 
           <SignedOut>
             <SignInButton mode="modal">
-              <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors">
-                Sign In
+              <button className="group/signin relative bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-all shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_30px_rgba(59,130,246,0.5)] overflow-hidden">
+                <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/signin:translate-x-full transition-transform duration-1000" />
+                <span className="relative z-10">Sign In</span>
               </button>
             </SignInButton>
           </SignedOut>
@@ -255,7 +330,7 @@ export default function EditorPage() {
               appearance={{
                 elements: {
                   avatarBox:
-                    "w-8 h-8 ring-2 ring-zinc-700 hover:ring-blue-500 transition-all",
+                    "w-8 h-8 ring-2 ring-zinc-700/50 hover:ring-blue-500/50 transition-all shadow-[0_0_15px_rgba(59,130,246,0.2)]",
                 },
               }}
             />
@@ -264,7 +339,7 @@ export default function EditorPage() {
       </div>
 
       {/* MAIN WORKSPACE */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative z-10">
         <Sidebar
           files={files}
           selectedFileId={selectedFile?._id ?? null}
@@ -273,34 +348,121 @@ export default function EditorPage() {
           }
           onFileCreate={handleCreateFile}
           onFileDelete={handleDeleteFile}
-          readOnly={isReadOnly} // <--- PERMISSION CONTROL
+          readOnly={isReadOnly}
         />
 
         <div className="flex-1 flex flex-col relative min-w-0">
-          <div className="flex-1 relative min-h-0 overflow-hidden">
+          {/* Editor Area with enhanced borders */}
+          <div className="flex-1 relative min-h-0 overflow-hidden border-l border-white/[0.08]">
+            {/* Top accent line */}
+            <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-blue-500/0 via-blue-500/30 to-blue-500/0" />
+
             {selectedFile ? (
-              <CollaborativeEditor
-                key={selectedFile._id}
-                roomId={selectedFile._id}
-                filename={selectedFile.name}
-                language={getLanguageFromFileName(selectedFile.name)}
-                onRun={runCode}
-                onUserChange={(users) => setActiveUsers(users)}
-                readOnly={isReadOnly} // <--- PERMISSION CONTROL
-              />
+              <div className="h-full relative">
+                {/* File tab header */}
+                <div className="h-10 border-b border-white/[0.08] bg-[#0d0d12]/50 backdrop-blur-sm flex items-center px-4 gap-2">
+                  <div className="flex items-center gap-2 px-3 py-1 rounded-md bg-blue-500/10 border border-blue-500/20">
+                    <div className="w-2 h-2 rounded-full bg-blue-400 shadow-[0_0_6px_rgba(96,165,250,0.8)]" />
+                    <span className="text-xs font-mono text-blue-300">
+                      {selectedFile.name}
+                    </span>
+                  </div>
+
+                  {/* Language badge */}
+                  <div className="px-2 py-0.5 rounded bg-zinc-800/50 border border-zinc-700/50">
+                    <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">
+                      {getLanguageFromFileName(selectedFile.name)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Editor container */}
+                <div className="h-[calc(100%-2.5rem)]">
+                  <CollaborativeEditor
+                    key={selectedFile._id}
+                    roomId={selectedFile._id}
+                    filename={selectedFile.name}
+                    language={getLanguageFromFileName(selectedFile.name)}
+                    onRun={runCode}
+                    onUserChange={(users) => setActiveUsers(users)}
+                    readOnly={isReadOnly}
+                  />
+                </div>
+              </div>
             ) : (
-              <div className="flex items-center justify-center h-full text-zinc-500 select-none">
-                Select a file to start coding...
+              <div className="flex flex-col items-center justify-center h-full text-zinc-500 select-none relative">
+                {/* Decorative background */}
+                <div className="absolute inset-0 flex items-center justify-center opacity-5">
+                  <Cpu size={300} className="text-blue-500" />
+                </div>
+
+                <div className="relative z-10 flex flex-col items-center gap-4">
+                  <div className="w-16 h-16 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shadow-[0_0_40px_rgba(59,130,246,0.2)]">
+                    <Code2 size={32} className="text-blue-400" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-lg font-medium text-zinc-400 mb-1">
+                      No file selected
+                    </p>
+                    <p className="text-sm text-zinc-600">
+                      Choose a file from the sidebar to start coding
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
           </div>
-          <Terminal output={output} isRunning={isRunning} />
+
+          {/* Terminal with enhanced styling */}
+          <div className="border-t border-white/[0.08] relative">
+            {/* Top accent line */}
+            <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-emerald-500/0 via-emerald-500/30 to-emerald-500/0" />
+            <Terminal output={output} isRunning={isRunning} />
+          </div>
         </div>
       </div>
 
       {socket && projectId && (
         <ChatInterface socket={socket} projectId={projectId} />
       )}
+
+      <style jsx global>{`
+        @keyframes gradient {
+          0% {
+            background-position: 0% center;
+          }
+          50% {
+            background-position: 100% center;
+          }
+          100% {
+            background-position: 0% center;
+          }
+        }
+
+        @keyframes pulse-slow {
+          0%,
+          100% {
+            opacity: 0.3;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.5;
+            transform: scale(1.05);
+          }
+        }
+
+        .animate-gradient {
+          animation: gradient 3s linear infinite;
+        }
+
+        .animate-pulse-slow {
+          animation: pulse-slow 4s ease-in-out infinite;
+        }
+
+        .animation-delay-1000 {
+          animation-delay: 1s;
+        }
+      `}</style>
     </main>
   );
 }
