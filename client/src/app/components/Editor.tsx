@@ -6,6 +6,7 @@ import { HocuspocusProvider } from "@hocuspocus/provider";
 import { MonacoBinding } from "y-monaco";
 import { Play, Loader2 } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
+import type { editor } from "monaco-editor";
 
 // --- Types ---
 export interface AwarenessUser {
@@ -36,10 +37,12 @@ export const CollaborativeEditor = ({
   readOnly = false,
 }: EditorProps) => {
   const { user } = useUser();
-  const editorRef = useRef<any>(null);
+  // ✅ FIX 1: Correctly type the Ref so TypeScript knows it has .getValue()
+  const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const [provider, setProvider] = useState<HocuspocusProvider | null>(null);
   const [doc, setDoc] = useState<Y.Doc | null>(null);
   const [binding, setBinding] = useState<MonacoBinding | null>(null);
+  const [isRunning, setIsRunning] = useState(false);
 
   // Cleanup on Unmount
   useEffect(() => {
@@ -53,7 +56,8 @@ export const CollaborativeEditor = ({
   // 1. Setup User Identity
   useEffect(() => {
     if (provider && user) {
-      const randomColor = "#" + Math.floor(Math.random() * 16777215).toString(16);
+      const randomColor =
+        "#" + Math.floor(Math.random() * 16777215).toString(16);
       provider.setAwarenessField("user", {
         name: user.fullName || "Anonymous",
         color: randomColor,
@@ -71,6 +75,7 @@ export const CollaborativeEditor = ({
       if (!states) return;
 
       const activeUsers: ActiveUser[] = [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       states.forEach((state: any, clientId: number) => {
         if (state.user) {
           activeUsers.push({
@@ -112,7 +117,7 @@ export const CollaborativeEditor = ({
       type,
       editor.getModel()!,
       new Set([editor]),
-      newProvider.awareness
+      newProvider.awareness,
     );
 
     setDoc(newDoc);
@@ -120,28 +125,41 @@ export const CollaborativeEditor = ({
     setBinding(newBinding);
   };
 
-  const handleRunClick = () => {
+  const handleRunClick = async () => {
     if (editorRef.current) {
-      onRun(editorRef.current.getValue());
+      setIsRunning(true);
+      // ✅ FIX 1 (cont): Now safe to call getValue()
+      await onRun(editorRef.current.getValue());
+      setTimeout(() => setIsRunning(false), 500);
     }
   };
 
   return (
-    <div className="relative h-full w-full bg-[#1e1e1e]">
-       {!readOnly && (
+    <div className="relative h-full w-full bg-[#131313]">
+      {!readOnly && (
         <div className="absolute top-4 right-6 z-10 flex gap-2">
           <button
             onClick={handleRunClick}
+            disabled={isRunning}
             className="group relative bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 disabled:from-emerald-600/50 disabled:to-emerald-500/50 text-white px-4 py-2 rounded-lg shadow-[0_0_30px_rgba(16,185,129,0.4)] hover:shadow-[0_0_40px_rgba(16,185,129,0.6)] transition-all disabled:cursor-not-allowed flex items-center gap-2 text-sm font-medium overflow-hidden"
+            title={isRunning ? "Running..." : "Run Code (⌘+Enter)"}
           >
             {/* Shimmer effect */}
-            
+            {!isRunning && (
               <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+            )}
+
+            {isRunning ? (
+              <>
+                <Loader2 size={16} className="animate-spin relative z-10" />
+                <span className="relative z-10">Running...</span>
+              </>
+            ) : (
               <>
                 <Play size={16} className="fill-white relative z-10" />
                 <span className="relative z-10">Run</span>
               </>
-            
+            )}
           </button>
         </div>
       )}
@@ -149,8 +167,18 @@ export const CollaborativeEditor = ({
       {/* Read-Only Badge */}
       {readOnly && (
         <div className="absolute top-4 right-6 z-10 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-medium flex items-center gap-2 shadow-[0_0_20px_rgba(251,191,36,0.15)]">
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          <svg
+            className="w-3.5 h-3.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+            />
           </svg>
           <span>Read Only</span>
         </div>
