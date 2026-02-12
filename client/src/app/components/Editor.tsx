@@ -6,7 +6,6 @@ import { HocuspocusProvider } from "@hocuspocus/provider";
 import { MonacoBinding } from "y-monaco";
 import { Play, Loader2 } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
-import type { editor } from "monaco-editor"; // Import Monaco types
 
 // --- Types ---
 export interface AwarenessUser {
@@ -22,7 +21,7 @@ export interface ActiveUser extends AwarenessUser {
 interface EditorProps {
   roomId: string;
   language: string;
-  filename: string;
+  filename: string; // <--- CRITICAL for Syntax Highlighting
   onRun: (code: string) => void;
   onUserChange?: (users: ActiveUser[]) => void;
   readOnly?: boolean;
@@ -37,12 +36,10 @@ export const CollaborativeEditor = ({
   readOnly = false,
 }: EditorProps) => {
   const { user } = useUser();
-  // ✅ FIX 1: Correctly type the Ref so TypeScript knows it has .getValue()
-  const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
+  const editorRef = useRef<any>(null);
   const [provider, setProvider] = useState<HocuspocusProvider | null>(null);
   const [doc, setDoc] = useState<Y.Doc | null>(null);
   const [binding, setBinding] = useState<MonacoBinding | null>(null);
-  const [isRunning, setIsRunning] = useState(false);
 
   // Cleanup on Unmount
   useEffect(() => {
@@ -56,8 +53,7 @@ export const CollaborativeEditor = ({
   // 1. Setup User Identity
   useEffect(() => {
     if (provider && user) {
-      const randomColor =
-        "#" + Math.floor(Math.random() * 16777215).toString(16);
+      const randomColor = "#" + Math.floor(Math.random() * 16777215).toString(16);
       provider.setAwarenessField("user", {
         name: user.fullName || "Anonymous",
         color: randomColor,
@@ -75,7 +71,6 @@ export const CollaborativeEditor = ({
       if (!states) return;
 
       const activeUsers: ActiveUser[] = [];
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       states.forEach((state: any, clientId: number) => {
         if (state.user) {
           activeUsers.push({
@@ -95,8 +90,8 @@ export const CollaborativeEditor = ({
     };
   }, [provider, onUserChange]);
 
-  const handleEditorDidMount: OnMount = (editorInstance, monaco) => {
-    editorRef.current = editorInstance;
+  const handleEditorDidMount: OnMount = (editor, monaco) => {
+    editorRef.current = editor;
 
     const newDoc = new Y.Doc();
     const newProvider = new HocuspocusProvider({
@@ -106,7 +101,7 @@ export const CollaborativeEditor = ({
     });
 
     const type = newDoc.getText("monaco");
-    const currentContent = editorInstance.getValue();
+    const currentContent = editor.getValue();
 
     // Preserve content if it's the first load
     if (type.toString() === "" && currentContent) {
@@ -115,9 +110,9 @@ export const CollaborativeEditor = ({
 
     const newBinding = new MonacoBinding(
       type,
-      editorInstance.getModel()!,
-      new Set([editorInstance]),
-      newProvider.awareness,
+      editor.getModel()!,
+      new Set([editor]),
+      newProvider.awareness
     );
 
     setDoc(newDoc);
@@ -125,119 +120,58 @@ export const CollaborativeEditor = ({
     setBinding(newBinding);
   };
 
-  const handleRunClick = async () => {
+  const handleRunClick = () => {
     if (editorRef.current) {
-      setIsRunning(true);
-      // ✅ FIX 1 (cont): Now safe to call getValue()
-      await onRun(editorRef.current.getValue());
-      setTimeout(() => setIsRunning(false), 500);
+      onRun(editorRef.current.getValue());
     }
   };
 
   return (
-    <div className="relative h-full w-full bg-[#0a0a0f]">
-      {!readOnly && (
+    <div className="relative h-full w-full bg-[#1e1e1e]">
+       {!readOnly && (
         <div className="absolute top-4 right-6 z-10 flex gap-2">
           <button
             onClick={handleRunClick}
-            disabled={isRunning}
             className="group relative bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 disabled:from-emerald-600/50 disabled:to-emerald-500/50 text-white px-4 py-2 rounded-lg shadow-[0_0_30px_rgba(16,185,129,0.4)] hover:shadow-[0_0_40px_rgba(16,185,129,0.6)] transition-all disabled:cursor-not-allowed flex items-center gap-2 text-sm font-medium overflow-hidden"
           >
-            {isRunning ? (
-              <>
-                <Loader2 size={16} className="animate-spin relative z-10" />
-                <span className="relative z-10">Running...</span>
-              </>
-            ) : (
+            {/* Shimmer effect */}
+            
+              <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
               <>
                 <Play size={16} className="fill-white relative z-10" />
                 <span className="relative z-10">Run</span>
               </>
-            )}
+            
           </button>
         </div>
       )}
 
+      {/* Read-Only Badge */}
       {readOnly && (
         <div className="absolute top-4 right-6 z-10 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-medium flex items-center gap-2 shadow-[0_0_20px_rgba(251,191,36,0.15)]">
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
           <span>Read Only</span>
         </div>
       )}
 
-      <div className="absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-blue-500/[0.03] to-transparent pointer-events-none z-[1]" />
-
       <Editor
         height="100%"
         theme="vs-dark"
-        path={filename}
-        defaultLanguage={language}
+        path={filename} // <--- THIS IS THE FIX. It tells Monaco "I am a Python file"
+        defaultLanguage={language} // Use defaultLanguage instead of language to prevent flicker
         onMount={handleEditorDidMount}
         options={{
           readOnly: readOnly,
           domReadOnly: readOnly,
           minimap: { enabled: false },
-          fontSize: 14,
+          fontSize: 22,
           automaticLayout: true,
-          padding: { top: 16, bottom: 16 },
+          padding: { top: 20 },
           scrollBeyondLastLine: false,
-          fontFamily: "monospace",
-          fontLigatures: false,
-          lineNumbers: "on",
-          renderLineHighlight: "line",
-          cursorBlinking: "blink",
-          cursorSmoothCaretAnimation: "off",
-          smoothScrolling: false,
-          contextmenu: true,
-          mouseWheelZoom: false,
-          links: false,
-          colorDecorators: false,
-          renderWhitespace: "none",
-          guides: {
-            indentation: false,
-            bracketPairs: false,
-          },
-          bracketPairColorization: {
-            enabled: false,
-          },
-          suggest: {
-            insertMode: "replace",
-            showWords: false,
-            showSnippets: false,
-          },
-          quickSuggestions: false,
-          suggestOnTriggerCharacters: false,
-          wordBasedSuggestions: "off",
-          scrollbar: {
-            vertical: "auto",
-            horizontal: "auto",
-            useShadows: false,
-            verticalScrollbarSize: 10,
-            horizontalScrollbarSize: 10,
-          },
-          acceptSuggestionOnCommitCharacter: false,
-          acceptSuggestionOnEnter: "off",
-          tabCompletion: "off",
-          renderValidationDecorations: "off",
-          renderFinalNewline: "off",
-          rulers: [],
-          folding: false,
-          foldingHighlight: false,
-          unfoldOnClickAfterEndOfLine: false,
-          showFoldingControls: "never",
-          matchBrackets: "never",
-          selectionHighlight: false,
-          occurrencesHighlight: "off",
-          codeLens: false,
-          // lightbulb: false ,
-          hover: {
-            enabled: false,
-          },
-          parameterHints: {
-            enabled: false,
-          },
-          glyphMargin: false,
-          disableLayerHinting: true,
-          disableMonospaceOptimizations: false,
+          fontFamily: "'Fira Code', 'JetBrains Mono', monospace",
+          fontLigatures: true,
         }}
       />
     </div>
