@@ -24,6 +24,7 @@ interface Project {
 export default function Dashboard() {
   const { user } = useUser();
   const router = useRouter();
+  const API_URL = process.env.NEXT_PUBLIC_APIURL || "http://localhost:5000";
 
   // State
   const [joinId, setJoinId] = useState("");
@@ -43,7 +44,7 @@ export default function Dashboard() {
   // 1. Fetch User's Projects
   useEffect(() => {
     if (user) {
-      fetch(`http://localhost:5000/projects/user/${user.id}`)
+      fetch(`${API_URL}/projects/user/${user.id}`)
         .then((res) => res.json())
         .then((data) => {
           setProjects(data);
@@ -64,7 +65,7 @@ export default function Dashboard() {
     if (!user || !newProjectName.trim()) return;
     setIsCreating(true);
     try {
-      const res = await fetch("http://localhost:5000/projects/create", {
+      const res = await fetch(`${API_URL}/projects/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -104,7 +105,7 @@ export default function Dashboard() {
       return;
 
     try {
-      const res = await fetch(`http://localhost:5000/projects/${projectId}`, {
+      const res = await fetch(`${API_URL}/projects/${projectId}`, {
         method: "DELETE",
       });
       if (res.ok)
@@ -125,7 +126,7 @@ export default function Dashboard() {
     e.stopPropagation();
     if (!editingId || !editName.trim()) return;
     try {
-      const res = await fetch(`http://localhost:5000/projects/${editingId}`, {
+      const res = await fetch(`${API_URL}/projects/${editingId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: editName }),
@@ -204,7 +205,7 @@ export default function Dashboard() {
         {/* Header & Create Button */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-4">
           <div>
-            <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-500">
+            <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-white to-zinc-500">
               Welcome back, {user?.firstName || "Developer"}
             </h1>
             <p className="text-zinc-400 mt-1">

@@ -43,6 +43,8 @@ export default function EditorPage() {
   const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([]);
   const [socket, setSocket] = useState<Socket | null>(null);
 
+  const API_URL = process.env.NEXT_PUBLIC_APIURL || "http://localhost:5000";
+
   // 1. Initialize Project from URL
   useEffect(() => {
     if (!isLoaded) return;
@@ -57,7 +59,7 @@ export default function EditorPage() {
     }
 
     // Load Project
-    fetch(`http://localhost:5000/projects/${urlProjectId}`)
+    fetch(`${API_URL}/projects/${urlProjectId}`)
       .then((res) => {
         if (!res.ok) throw new Error("Project not found");
         return res.json();
@@ -65,7 +67,7 @@ export default function EditorPage() {
       .then((project) => {
         setProjectId(project._id);
         setProjectOwnerId(project.ownerId); // Save Owner ID
-        return fetch(`http://localhost:5000/projects/${project._id}/files`);
+        return fetch(`${API_URL}/projects/${project._id}/files`);
       })
       .then((res) => res.json())
       .then((data) => {
@@ -111,7 +113,7 @@ export default function EditorPage() {
   };
 
   const refreshFiles = (id: string) => {
-    fetch(`http://localhost:5000/projects/${id}/files`)
+    fetch(`${API_URL}/projects/${id}/files`)
       .then((res) => res.json())
       .then((data) => setFiles(data));
   };
@@ -127,14 +129,11 @@ export default function EditorPage() {
             ? "cpp"
             : "javascript";
 
-      const res = await fetch(
-        `http://localhost:5000/projects/${projectId}/files`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, language }),
-        },
-      );
+      const res = await fetch(`${API_URL}/projects/${projectId}/files`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, language }),
+      });
       if (res.ok) refreshFiles(projectId);
     } catch (error) {
       console.error("Failed to create file", error);
@@ -144,10 +143,9 @@ export default function EditorPage() {
   const handleDeleteFile = async (fileId: string) => {
     if (!confirm("Are you sure you want to delete this file?")) return;
     try {
-      await fetch(
-        `http://localhost:5000/projects/${projectId}/files/${fileId}`,
-        { method: "DELETE" },
-      );
+      await fetch(`${API_URL}/projects/${projectId}/files/${fileId}`, {
+        method: "DELETE",
+      });
       if (selectedFile?._id === fileId) setSelectedFile(null);
       refreshFiles(projectId);
     } catch (error) {
@@ -158,7 +156,7 @@ export default function EditorPage() {
   // 3. Socket Connection
   useEffect(() => {
     if (!projectId) return;
-    const newSocket = io("http://localhost:5000");
+    const newSocket = io(`${API_URL}`);
     newSocket.emit("join-project", projectId);
     setSocket(newSocket);
     return () => {
@@ -173,7 +171,7 @@ export default function EditorPage() {
     setOutput([]);
 
     try {
-      const response = await fetch("http://localhost:5000/execute", {
+      const response = await fetch(`${API_URL}/execute`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
