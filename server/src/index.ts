@@ -10,17 +10,22 @@ import fs from "fs";
 import path from "path";
 import { createAdapter } from "@socket.io/redis-adapter";
 import  { Redis } from "ioredis";
-import "dotenv/config";
+import dotenv from "dotenv";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 // --- MONGODB CONNECTION ---
+dotenv.config();
+
+// 1. Use the Environment Variable (or localhost as a fallback for your laptop)
+const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/nexus-ide";
+
 mongoose
-  .connect("mongodb://localhost:27017/nexus-ide")
+  .connect(MONGO_URI)
   .then(() => console.log("💾 Connected to MongoDB"))
-  .catch((error) => console.error("MongoDB Error:", error));
+  .catch((error) => console.error("❌ MongoDB Connection Error:", error));
 
 // --- REDIS SETUP ---
 const pubClient = new Redis(process.env.REDIS_URL || "redis://localhost:6379");
