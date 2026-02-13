@@ -42,6 +42,7 @@ export default function EditorPage() {
   const [isRunning, setIsRunning] = useState(false);
   const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([]);
   const [socket, setSocket] = useState<Socket | null>(null);
+  const [executedCode, setExecutedCode] = useState("");
 
   const API_URL = process.env.NEXT_PUBLIC_APIURL || "http://localhost:5000";
 
@@ -169,6 +170,7 @@ export default function EditorPage() {
     if (!selectedFile) return;
     setIsRunning(true);
     setOutput([]);
+    setExecutedCode(code);
 
     try {
       const response = await fetch(`${API_URL}/execute`, {
@@ -417,7 +419,7 @@ export default function EditorPage() {
           <div className="border-t border-white/[0.08] relative">
             {/* Top accent line */}
             <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-emerald-500/0 via-emerald-500/30 to-emerald-500/0" />
-            <Terminal output={output} isRunning={isRunning} />
+            <Terminal output={output} isRunning={isRunning} code={executedCode} />
           </div>
         </div>
       </div>

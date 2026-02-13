@@ -194,7 +194,7 @@ export const CollaborativeEditor = ({
           readOnly: readOnly,
           domReadOnly: readOnly,
           minimap: { enabled: false },
-          fontSize: 22,
+          fontSize: 18,
           automaticLayout: true,
           padding: { top: 20 },
           scrollBeyondLastLine: false,

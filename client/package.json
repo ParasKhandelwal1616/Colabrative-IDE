@@ -10,9 +10,12 @@
         "prepare": "husky"
     },
     "dependencies": {
+        "@ai-sdk/google": "^3.0.29",
         "@clerk/nextjs": "^6.37.3",
+        "@google/generative-ai": "^0.24.1",
         "@hocuspocus/provider": "^3.4.4",
         "@monaco-editor/react": "^4.7.0",
+        "ai": "^5.0.131",
         "lucide-react": "^0.563.0",
         "next": "16.1.6",
         "react": "19.2.3",
