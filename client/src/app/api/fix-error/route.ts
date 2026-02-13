@@ -21,9 +21,9 @@ export async function POST(req: Request) {
       ${errorMessage}
     `;
 
-    // ✅ FIX: Use "gemini-2.0-flash-lite" 
+    // ✅ FIX: Use "gemini-2.0-flash-lite"
     // This model is lighter, faster, and usually has better free-tier availability.
-    const modelName = "gemini-2.5-flash"; 
+    const modelName = "gemini-2.5-flash";
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
     const response = await fetch(url, {
@@ -38,15 +38,16 @@ export async function POST(req: Request) {
 
     if (data.error) {
       console.error("AI Error:", data.error);
-      return NextResponse.json({ 
-        text: `AI Error: ${data.error.message}` 
+      return NextResponse.json({
+        text: `AI Error: ${data.error.message}`,
       });
     }
 
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "No response generated.";
+    const text =
+      data.candidates?.[0]?.content?.parts?.[0]?.text ||
+      "No response generated.";
     return NextResponse.json({ text });
-
-  } catch (error: any) {
-    return NextResponse.json({ text: `Server Error: ${error.message}` });
+  } catch (error) {
+    return NextResponse.json({ text: `Server Error: ${error}` });
   }
 }
