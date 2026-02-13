@@ -7,31 +7,31 @@
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "collab": "ts-node-dev --respawn --transpile-only src/collaboration.ts",
     "build": "tsc",
-    "start": "node dist/index.ts"
+    "start": "node dist/index.js" 
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@hocuspocus/extension-database": "^3.4.4",
-    "@hocuspocus/server": "^3.4.4",
+    "@hocuspocus/extension-database": "^2.13.0",
+    "@hocuspocus/server": "^2.13.0",
     "@socket.io/redis-adapter": "^8.3.0",
-    "cors": "^2.8.6",
-    "dotenv": "^17.3.1",
-    "express": "^5.2.1",
-    "ioredis": "^5.9.2",
-    "mongodb": "^6.3.0",
-    "mongoose": "^8.22.1",
-    "redis": "^5.10.0",
-    "socket.io": "^4.8.3",
-    "y-websocket": "^3.0.0",
-    "yjs": "^13.6.29"
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "ioredis": "^5.4.1",
+    "mongodb": "^6.5.0",
+    "mongoose": "^8.2.1",
+    "redis": "^4.6.13",
+    "socket.io": "^4.7.5",
+    "y-websocket": "^1.5.4",
+    "yjs": "^13.6.14"
   },
   "devDependencies": {
-    "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.6",
-    "@types/node": "^25.2.0",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.11.24",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.3.3"
   }
 }
