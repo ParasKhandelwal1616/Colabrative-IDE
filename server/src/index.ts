@@ -1,41 +1,52 @@
 import express from "express";
-import cors from "cors";
-import { Project } from "./models/Project";
-import { File } from "./models/File";
-import { Server } from "socket.io";
 import http from "http";
+import cors from "cors";
 import mongoose from "mongoose";
+import dotenv from "dotenv";
+import { Server } from "socket.io";
+import { createAdapter } from "@socket.io/redis-adapter";
+import { Redis } from "ioredis";
 import { exec } from "child_process";
 import fs from "fs";
 import path from "path";
-import { createAdapter } from "@socket.io/redis-adapter";
-import  { Redis } from "ioredis";
-import dotenv from "dotenv";
 
+// Import Models (Ensure these files exist in src/models/)
+import { Project } from "./models/Project";
+import { File } from "./models/File";
+
+// 1. Initialize Configuration
+dotenv.config();
 const app = express();
-app.use(cors());
+const PORT = process.env.PORT || 5000; // ✅ FIX: Use Render's PORT
+
+// 2. Middleware
+app.use(cors({
+  origin: "*", // Allow all origins (frontend)
+  methods: ["GET", "POST", "DELETE", "PATCH"],
+  credentials: true
+}));
 app.use(express.json());
 
-// --- MONGODB CONNECTION ---
-dotenv.config();
-
-// 1. Use the Environment Variable (or localhost as a fallback for your laptop)
+// 3. MongoDB Connection
 const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/nexus-ide";
 
 mongoose
   .connect(MONGO_URI)
   .then(() => console.log("💾 Connected to MongoDB"))
-  .catch((error) => console.error("❌ MongoDB Connection Error:", error));
+  .catch((err) => console.error("❌ MongoDB Connection Error:", err));
 
-// --- REDIS SETUP ---
-const pubClient = new Redis(process.env.REDIS_URL || "redis://localhost:6379");
+// 4. Redis Setup (For Real-time Collaboration)
+const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
+console.log(`🔌 Connecting to Redis at: ${REDIS_URL}`);
+
+const pubClient = new Redis(REDIS_URL);
 const subClient = pubClient.duplicate();
 
-pubClient.on("error", (err : string) => console.error("Redis Pub Error:", err));
-subClient.on("error", (err : string) => console.error("Redis Sub Error:", err));
+pubClient.on("error", (err) => console.error("❌ Redis Pub Error:", err));
+subClient.on("error", (err) => console.error("❌ Redis Sub Error:", err));
 
-// --- RUNTIME CONFIG ---
-const RUNTIMES: any = {
+// 5. Runtime Configuration (Docker Images)
+const RUNTIMES: Record<string, { image: string; command: string; extension: string }> = {
   javascript: { image: "node:18-alpine", command: "node /app/code.js", extension: "js" },
   python: { image: "python:3.10-alpine", command: "python3 /app/code.py", extension: "py" },
   cpp: { image: "gcc:latest", command: "sh -c 'g++ /app/code.cpp -o /app/a.out && /app/a.out'", extension: "cpp" },
@@ -46,8 +57,7 @@ const RUNTIMES: any = {
 // 🚀 API ROUTES
 // ==========================================
 
-// 1. GET Project Details (THIS WAS MISSING!)
-// Used by the Editor to check if the project exists
+// GET: Fetch Project Details
 app.get("/projects/:projectId", async (req, res) => {
   try {
     const project = await Project.findById(req.params.projectId);
@@ -58,36 +68,24 @@ app.get("/projects/:projectId", async (req, res) => {
   }
 });
 
-// 2. GET All Projects for a User (For Dashboard)
+// GET: All Projects for User
 app.get("/projects/user/:userId", async (req, res) => {
   try {
-    const userId = req.params.userId;
-    // Sort by newest first (-1)
-    const projects = await Project.find({ ownerId: userId }).sort({ createdAt: -1 });
+    const projects = await Project.find({ ownerId: req.params.userId }).sort({ createdAt: -1 });
     res.json(projects);
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch projects" });
   }
 });
 
-// 3. CREATE Project (Updated to ALWAYS create new)
+// POST: Create New Project
 app.post("/projects/create", async (req, res) => {
   const { name, userId } = req.body;
-
-  if (!userId) {
-    return res.status(400).json({ error: "User ID is required" });
-  }
+  if (!userId) return res.status(400).json({ error: "User ID is required" });
 
   try {
-    // Force a unique name if empty, but ALWAYS create a new doc
     const projectName = name || `Untitled Project ${Date.now()}`;
-    
-    console.log(`Creating NEW project for user: ${userId}`);
-
-    const project = await Project.create({
-      name: projectName,
-      ownerId: userId,
-    });
+    const project = await Project.create({ name: projectName, ownerId: userId });
 
     // Create default file
     await File.create({
@@ -96,15 +94,42 @@ app.post("/projects/create", async (req, res) => {
       language: "javascript",
       content: "console.log('Welcome to NexusIDE!');",
     });
-    
+
     res.json(project);
   } catch (error) {
-    console.error("Error creating project:", error);
     res.status(500).json({ error: "Failed to create project" });
   }
 });
 
-// 4. Get Project Files
+// PATCH: Rename Project
+app.patch("/projects/:projectId", async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name) return res.status(400).json({ error: "Name is required" });
+
+    const updatedProject = await Project.findByIdAndUpdate(
+      req.params.projectId,
+      { name },
+      { new: true }
+    );
+    res.json(updatedProject);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to rename project" });
+  }
+});
+
+// DELETE: Delete Project
+app.delete("/projects/:projectId", async (req, res) => {
+  try {
+    await File.deleteMany({ projectId: req.params.projectId });
+    await Project.findByIdAndDelete(req.params.projectId);
+    res.json({ message: "Project deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to delete project" });
+  }
+});
+
+// GET: Fetch Project Files
 app.get("/projects/:projectId/files", async (req, res) => {
   try {
     const files = await File.find({ projectId: req.params.projectId });
@@ -114,7 +139,7 @@ app.get("/projects/:projectId/files", async (req, res) => {
   }
 });
 
-// 5. Create New File
+// POST: Create File
 app.post("/projects/:projectId/files", async (req, res) => {
   const { name, language } = req.body;
   try {
@@ -130,116 +155,96 @@ app.post("/projects/:projectId/files", async (req, res) => {
   }
 });
 
-// 6. Delete File
+// DELETE: Delete File
 app.delete("/projects/:projectId/files/:fileId", async (req, res) => {
   try {
-    const { fileId } = req.params;
-    await File.findByIdAndDelete(fileId);
+    await File.findByIdAndDelete(req.params.fileId);
     res.json({ message: "File deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: "Failed to delete file" });
   }
 });
 
-app.delete("/projects/:projectId", async (req, res) => {
-  try {
-    const projectId = req.params.projectId;
-
-    // 1. Delete all files belonging to this project first
-    await File.deleteMany({ projectId: projectId });
-
-    // 2. Delete the project itself
-    await Project.findByIdAndDelete(projectId);
-
-    res.json({ message: "Project and associated files deleted successfully" });
-  } catch (err) {
-    console.error("Error deleting project:", err);
-    res.status(500).json({ error: "Failed to delete project" });
-  }
-});
-
-// ---------------------------------------------------------
-// RENAME Project
-// ---------------------------------------------------------
-app.patch("/projects/:projectId", async (req, res) => {
-  try {
-    const { name } = req.body;
-    const projectId = req.params.projectId;
-
-    if (!name) return res.status(400).json({ error: "Name is required" });
-
-    const updatedProject = await Project.findByIdAndUpdate(
-      projectId,
-      { name },
-      { new: true } // Return the updated document
-    );
-
-    if (!updatedProject) return res.status(404).json({ error: "Project not found" });
-
-    res.json(updatedProject);
-  } catch (err) {
-    console.error("Error renaming project:", err);
-    res.status(500).json({ error: "Failed to rename project" });
-  }
-});
-
-// 7. Execute Code
+// POST: Execute Code (⚠️ Docker Required)
 app.post("/execute", async (req, res) => {
   const { code, language } = req.body;
   const runtime = RUNTIMES[language];
 
-  if (!runtime) {
-    return res.status(400).json({ error: "Unsupported language" });
+  if (!runtime) return res.status(400).json({ error: "Unsupported language" });
+
+  try {
+    // Ensure temp directory exists
+    const tempDir = path.join(__dirname, "temp");
+    if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+
+    const fileName = language === "java" ? "Main.java" : `code.${runtime.extension}`;
+    const filePath = path.join(tempDir, fileName);
+    
+    fs.writeFileSync(filePath, code);
+
+    // Docker Execution Command
+    const dockerCmd = `docker run --rm -v "${filePath}":/app/${fileName} ${runtime.image} ${runtime.command}`;
+    console.log(`⚡ Executing: ${language}`);
+
+    exec(dockerCmd, { timeout: 10000 }, (error, stdout, stderr) => {
+      // Cleanup file
+      try { fs.unlinkSync(filePath); } catch (e) {}
+
+      if (error) {
+        console.error("Execution Error:", stderr);
+        return res.json({ output: stderr || error.message });
+      }
+      res.json({ output: stdout });
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: "Execution failed: " + err.message });
   }
-
-  const tempDir = path.join(__dirname, "temp");
-  if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
-
-  const fileName = language === "java" ? "Main.java" : `code.${runtime.extension}`;
-  const filePath = path.join(tempDir, fileName);
-  fs.writeFileSync(filePath, code);
-
-  const dockerCmd = `docker run --rm -v "${filePath}":/app/${fileName} ${runtime.image} ${runtime.command}`;
-
-  console.log(`Running: ${language}`);
-
-  exec(dockerCmd, { timeout: 10000 }, (error, stdout, stderr) => {
-    try {
-      fs.unlinkSync(filePath);
-    } catch (e) {
-      console.error("Failed to delete temp file");
-    }
-
-    if (error) {
-      return res.json({ output: stderr || error.message });
-    }
-    res.json({ output: stdout });
-  });
 });
 
-// --- SOCKET.IO SERVER ---
+// ==========================================
+// 🔌 SOCKET.IO SERVER (Real-time Collaboration)
+// ==========================================
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: "*" },
-  adapter: createAdapter(pubClient, subClient),
+  adapter: createAdapter(pubClient, subClient), // Redis Adapter
 });
 
 io.on("connection", (socket) => {
-  console.log(`User connected: ${socket.id}`);
+  console.log(`👤 User connected: ${socket.id}`);
 
   socket.on("join-project", (projectId) => {
     socket.join(projectId);
     console.log(`User ${socket.id} joined project ${projectId}`);
   });
 
+  socket.on("code-update", (data) => {
+    socket.to(data.projectId).emit("code-update", data);
+  });
+  
+  socket.on("cursor-update", (data) => {
+    socket.to(data.projectId).emit("cursor-update", data);
+  });
+
   socket.on("send-message", (data) => {
     socket.to(data.projectId).emit("receive-message", data);
   });
+
+  socket.on("disconnect", () => {
+    console.log(`User disconnected: ${socket.id}`);
+  });
 });
 
-// --- START SERVER ---
-const PORT = 5000;
+// ==========================================
+// 🚀 START SERVER
+// ==========================================
 server.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log("Redis Adapter connected");
+  console.log(`
+  🚀 Server is running!
+  ---------------------
+  📡 PORT:   ${PORT}
+  💾 Mongo:  ${MONOGO_URI.includes("localhost") ? "Local" : "Atlas"}
+  🔌 Redis:  ${REDIS_URL.includes("localhost") ? "Local" : "Cloud"}
+  ---------------------
+  `);
 });
